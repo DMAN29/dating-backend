@@ -1,4 +1,9 @@
-import * as userService from "./user.service.js";
+import {
+  getProfileService,
+  updateProfileService,
+  createAdminService,
+  deleteUserService,
+} from "./user.service.js";
 import {
   sendSuccess,
   sendError,
@@ -9,10 +14,10 @@ import logger from "../../shared/utils/logger.js";
  * Controller for handling User related requests
  */
 
-export const getProfile = async (req, res) => {
+export const getProfileController = async (req, res) => {
   logger.info(`Fetching profile for user: ${req.user.id}`);
   try {
-    const user = await userService.getProfile(req.user.id);
+    const user = await getProfileService(req.user.id);
     return sendSuccess(res, 200, "User profile fetched successfully", user);
   } catch (error) {
     logger.error(
@@ -22,10 +27,10 @@ export const getProfile = async (req, res) => {
   }
 };
 
-export const updateProfile = async (req, res) => {
+export const updateProfileController = async (req, res) => {
   logger.info(`Updating profile for user: ${req.user.id}`);
   try {
-    const user = await userService.updateProfile(req.user.id, req.body);
+    const user = await updateProfileService(req.user.id, req.body);
     logger.info(`Profile updated successfully for user: ${req.user.id}`);
     return sendSuccess(res, 200, "Profile updated successfully", user);
   } catch (error) {
@@ -36,10 +41,10 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-export const addAdmin = async (req, res) => {
+export const addAdminController = async (req, res) => {
   logger.info(`Admin ${req.user.id} is adding a new admin: ${req.body.email}`);
   try {
-    const admin = await userService.createAdmin(req.body);
+    const admin = await createAdminService(req.body);
     logger.info(`New admin added successfully: ${admin.email}`);
     return sendSuccess(res, 201, "Admin added successfully", admin);
   } catch (error) {
@@ -48,11 +53,11 @@ export const addAdmin = async (req, res) => {
   }
 };
 
-export const deleteAdmin = async (req, res) => {
+export const deleteAdminController = async (req, res) => {
   logger.info(`Admin ${req.user.id} is deleting user: ${req.params.id}`);
   try {
     const { id } = req.params;
-    await userService.deleteUser(id);
+    await deleteUserService(id);
     logger.info(`User ${id} deleted successfully by admin ${req.user.id}`);
     return sendSuccess(res, 200, "User deleted successfully");
   } catch (error) {

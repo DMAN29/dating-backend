@@ -33,6 +33,12 @@ export const SUBSCRIPTION_TYPES = {
   PREMIUM: "premium",
 };
 
+export const AUTH_PROVIDERS = {
+  EMAIL: "email",
+  GOOGLE: "google",
+  PHONE: "phone",
+};
+
 /**
  * GeoJSON types
  */

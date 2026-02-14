@@ -15,3 +15,31 @@ export const findById = async (id) => {
 export const createUser = async (userData) => {
   return await User.create(userData);
 };
+
+export const findByEmail = async (email) => {
+  return await User.findOne({ email });
+};
+
+export const findByPhone = async (phoneNumber) => {
+  return await User.findOne({ phoneNumber });
+};
+
+export const findByGoogleId = async (googleId) => {
+  return await User.findOne({ googleId });
+};
+
+export const upsertUserByEmail = async (email, data) => {
+  return await User.findOneAndUpdate({ email }, data, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true,
+  });
+};
+
+export const upsertUserByPhone = async (phoneNumber, data) => {
+  return await User.findOneAndUpdate({ phoneNumber }, data, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true,
+  });
+};

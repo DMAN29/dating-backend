@@ -36,11 +36,30 @@ export const signupValidation = [
   validate,
 ];
 
-/**
- * Login Validation Rules
- */
 export const loginValidation = [
   body("email").isEmail().withMessage("Please provide a valid email address"),
   body("password").notEmpty().withMessage("Password is required"),
+  validate,
+];
+
+export const googleLoginValidation = [
+  body("idToken").notEmpty().withMessage("Google ID token is required"),
+  validate,
+];
+
+export const sendOtpValidation = [
+  body("phoneNumber")
+    .matches(/^\+?[1-9]\d{7,14}$/)
+    .withMessage("Please provide a valid phone number"),
+  validate,
+];
+
+export const verifyOtpValidation = [
+  body("phoneNumber")
+    .matches(/^\+?[1-9]\d{7,14}$/)
+    .withMessage("Please provide a valid phone number"),
+  body("otp")
+    .isLength({ min: 4, max: 8 })
+    .withMessage("Please provide a valid OTP"),
   validate,
 ];

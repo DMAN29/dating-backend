@@ -1,4 +1,11 @@
-import * as authService from "./auth.service.js";
+import {
+  registerService,
+  loginService,
+  refreshService,
+  loginWithGoogleService,
+  sendOtpService,
+  verifyOtpService,
+} from "./auth.service.js";
 import {
   sendSuccess,
   sendError,
@@ -7,16 +14,10 @@ import { config } from "../../config/env.js";
 import ms from "ms";
 import logger from "../../shared/utils/logger.js";
 
-/**
- * Controller for handling Authentication requests
- */
-
-export const signup = async (req, res) => {
+export const signupController = async (req, res) => {
   logger.info(`Auth signup attempt for email: ${req.body.email}`);
   try {
-    const { user, accessToken, refreshToken } = await authService.register(
-      req.body,
-    );
+    const { user, accessToken, refreshToken } = await register(req.body);
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -29,9 +30,8 @@ export const signup = async (req, res) => {
 
     logger.info(`User registered successfully: ${user.email}`);
     return sendSuccess(res, 201, "User registered successfully", {
-      user,
       accessToken,
-      // refreshToken,
+      profile: { isNew: true, isComplete: user.profileComplete },
     });
   } catch (error) {
     logger.error(`Signup failed: ${error.message}`);
@@ -39,14 +39,11 @@ export const signup = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
+export const loginController = async (req, res) => {
   logger.info(`Auth login attempt for email: ${req.body.email}`);
   try {
     const { email, password } = req.body;
-    const { user, accessToken, refreshToken } = await authService.login(
-      email,
-      password,
-    );
+    const { user, accessToken, refreshToken } = await login(email, password);
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -59,9 +56,8 @@ export const login = async (req, res) => {
 
     logger.info(`User logged in successfully: ${user.email}`);
     return sendSuccess(res, 200, "Login successful", {
-      user,
       accessToken,
-      // refreshToken,
+      profile: { isNew: false, isComplete: user.profileComplete },
     });
   } catch (error) {
     logger.error(`Login failed for email ${req.body.email}: ${error.message}`);
@@ -69,21 +65,21 @@ export const login = async (req, res) => {
   }
 };
 
-export const logout = async (req, res) => {
+export const logoutController = async (req, res) => {
   logger.info(`User logout: ${req.user?.id}`);
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
   return sendSuccess(res, 200, "Logged out successfully");
 };
 
-export const logoutAll = async (req, res) => {
+export const logoutAllController = async (req, res) => {
   logger.info(`User logout all sessions: ${req.user?.id}`);
   res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
   return sendSuccess(res, 200, "Logged out from all sessions successfully");
 };
 
-export const refresh = async (req, res) => {
+export const refreshController = async (req, res) => {
   logger.info("Token refresh attempt");
   try {
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
@@ -92,7 +88,7 @@ export const refresh = async (req, res) => {
       return sendError(res, 400, "Refresh token is required");
     }
 
-    const { accessToken } = await authService.refresh(refreshToken);
+    const { accessToken } = await refresh(refreshToken);
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       maxAge: ms(config.accessTokenExpires),
@@ -108,6 +104,67 @@ export const refresh = async (req, res) => {
   }
 };
 
-export const validateToken = async (req, res) => {
-  return sendSuccess(res, 200, "Token is valid", { user: req.user });
+export const validateTokenController = async (req, res) => {
+  return sendSuccess(res, 200, "Token is valid", {
+    profile: { isComplete: !!req.user?.profileComplete },
+  });
+};
+
+export const googleLoginController = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const { user, accessToken, refreshToken, profile } =
+      await loginWithGoogle(idToken);
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: ms(config.accessTokenExpires),
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: ms(config.refreshTokenExpires),
+    });
+    return sendSuccess(res, 200, "Login successful", {
+      accessToken,
+      profile,
+    });
+  } catch (error) {
+    return sendError(res, 401, error.message || "Google login failed");
+  }
+};
+
+export const sendOtpController = async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    const result = await sendOtp(phoneNumber);
+    return sendSuccess(res, 200, "OTP sent", {
+      sent: result.sent,
+      code: result.code,
+    });
+  } catch (error) {
+    return sendError(res, 400, error.message || "Failed to send OTP");
+  }
+};
+
+export const verifyOtpController = async (req, res) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+    const { user, accessToken, refreshToken, profile } = await verifyOtp(
+      phoneNumber,
+      otp,
+    );
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: ms(config.accessTokenExpires),
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: ms(config.refreshTokenExpires),
+    });
+    return sendSuccess(res, 200, "Login successful", {
+      accessToken,
+      profile,
+    });
+  } catch (error) {
+    return sendError(res, 401, error.message || "OTP verification failed");
+  }
 };

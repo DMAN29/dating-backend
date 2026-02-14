@@ -6,23 +6,21 @@ import {
   INTEREST_PREFERENCES,
   SUBSCRIPTION_TYPES,
   GEO_TYPES,
+  AUTH_PROVIDERS,
 } from "../../shared/constants/user.constants.js";
 
 const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First name is required"],
       trim: true,
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
       trim: true,
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
@@ -30,9 +28,18 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function () {
+        return this.authProvider === AUTH_PROVIDERS.EMAIL;
+      },
       minlength: [6, "Password must be at least 6 characters"],
       select: false,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      index: true,
+      unique: true,
+      sparse: true,
     },
     role: {
       type: String,
@@ -42,11 +49,9 @@ const userSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: Object.values(GENDERS),
-      required: [true, "Gender is required"],
     },
     dateOfBirth: {
       type: Date,
-      required: [true, "Date of birth is required"],
     },
     bio: {
       type: String,
@@ -87,6 +92,21 @@ const userSchema = new mongoose.Schema(
         type: Number,
         default: 50,
       },
+    },
+    authProvider: {
+      type: String,
+      enum: Object.values(AUTH_PROVIDERS),
+      default: AUTH_PROVIDERS.EMAIL,
+    },
+    googleId: {
+      type: String,
+      index: true,
+      unique: true,
+      sparse: true,
+    },
+    profileComplete: {
+      type: Boolean,
+      default: false,
     },
     status: {
       isVerified: {
@@ -129,6 +149,21 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
+
+userSchema.methods.checkProfileComplete = function () {
+  const requiredFields = [
+    this.firstName,
+    this.lastName,
+    this.gender,
+    this.dateOfBirth,
+  ];
+  return requiredFields.every((v) => !!v);
+};
+
+userSchema.pre("save", function (next) {
+  this.profileComplete = this.checkProfileComplete();
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 

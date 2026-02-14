@@ -1,6 +1,6 @@
 import { verifyToken } from "../utils/jwt.util.js";
 import { sendError } from "../utils/responseFormatter.js";
-import * as authRepository from "../../modules/auth/auth.repository.js";
+import { findById } from "../../modules/auth/auth.repository.js";
 
 /**
  * Middleware to protect routes and validate JWT token
@@ -27,7 +27,7 @@ export const protect = async (req, res, next) => {
       return sendError(res, 401, "Token is invalid or expired");
     }
 
-    const user = await authRepository.findById(decoded.id);
+    const user = await findById(decoded.id);
     if (!user) {
       return sendError(res, 401, "User no longer exists");
     }
