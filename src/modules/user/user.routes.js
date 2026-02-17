@@ -9,20 +9,32 @@ import {
 } from "./user.controller.js";
 import { protect, authorize } from "../../shared/middleware/auth.middleware.js";
 import { updateProfileValidation } from "./user.validation.js";
-import { signupValidation } from "../auth/auth.validation.js";
 
-const router = express.Router();
+const userRouter = express.Router();
 
-router.get("/", protect, getProfileController);
+userRouter.get("/", protect, getProfileController);
 
-router.put("/", protect, updateProfileValidation, updateProfileController);
+userRouter.put("/", protect, updateProfileValidation, updateProfileController);
 
-router.get("/admin", protect, authorize("admin"), getAllUsersController);
+const adminUserRouter = express.Router();
 
-router.get("/admin/:id", protect, authorize("admin"), getUserByIdController);
+adminUserRouter.get("/", protect, authorize("admin"), getAllUsersController);
 
-router.patch("/admin/:id", protect, authorize("admin"), disableUserController);
+adminUserRouter.get("/:id", protect, authorize("admin"), getUserByIdController);
 
-router.delete("/admin/:id", protect, authorize("admin"), deleteUserController);
+adminUserRouter.patch(
+  "/:id",
+  protect,
+  authorize("admin"),
+  disableUserController,
+);
 
-export default router;
+adminUserRouter.delete(
+  "/:id",
+  protect,
+  authorize("admin"),
+  deleteUserController,
+);
+
+export default userRouter;
+export { adminUserRouter };

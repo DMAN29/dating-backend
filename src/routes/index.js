@@ -1,29 +1,38 @@
+// import express from "express";
+// import authRoutes from "../modules/auth/auth.routes.js";
+// import userRoutes, { adminUserRouter } from "../modules/user/user.routes.js";
+// import swipeRoutes from "../modules/swipe/swipe.routes.js";
+// import matchRoutes from "../modules/match/match.routes.js";
+// import discoverRoutes from "../modules/discover/discover.routes.js";
+
+// const router = express.Router();
+
+// router.use("/auth", authRoutes);
+
+// router.use("/user", userRoutes);
+
+// router.use("/admin/users", adminUserRouter);
+
+// router.use("/user/swipes", swipeRoutes);
+
+// router.use("/user/matches", matchRoutes);
+
+// router.use("/user/discover", discoverRoutes);
+
+// export default router;
+
 import express from "express";
+import publicRoutes from "./public.routes.js";
+import userRoutes from "./user.routes.js";
+import adminRoutes from "./admin.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";
-import userRoutes from "../modules/user/user.routes.js";
-import swipeRoutes from "../modules/swipe/swipe.routes.js";
-import matchRoutes from "../modules/match/match.routes.js";
-import discoverRoutes from "../modules/discover/discover.routes.js";
 
 const router = express.Router();
 
-/**
- * Main router file that combines all individual module routes
- */
-
-// Auth module routes
+// Route grouping
 router.use("/auth", authRoutes);
-
-// User module routes
-router.use("/users", userRoutes);
-
-// Swipe module routes
-router.use("/swipes", swipeRoutes);
-
-// Match module routes
-router.use("/matches", matchRoutes);
-
-// Discover module routes
-router.use("/discover", discoverRoutes);
+router.use("/public", publicRoutes);
+router.use("/user", userRoutes);
+router.use("/admin", adminRoutes);
 
 export default router;

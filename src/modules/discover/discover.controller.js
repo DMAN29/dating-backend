@@ -7,11 +7,15 @@ import logger from "../../shared/utils/logger.js";
 
 export const discoverController = async (req, res) => {
   try {
-    const { limit } = req.query;
+    const { page = 1, limit = 10 } = req.query;
 
-    const users = await discoverService(req.user.id, limit || 20);
+    const result = await discoverService(req.user.id, page, limit);
+    const { items, ...meta } = result;
 
-    return sendSuccess(res, 200, "Discover users fetched successfully", users);
+    return sendSuccess(res, 200, "Discover users fetched successfully", {
+      users: items,
+      ...meta,
+    });
   } catch (error) {
     logger.error(`Discover failed: ${error.message}`);
     return sendError(res, 400, error.message);

@@ -8,19 +8,13 @@ import {
   SUBSCRIPTION_TYPES,
 } from "../constants/user.constants.js";
 
-/**
- * Admin Seeder Script
- * Run with: npm run seed:admin
- */
 const seedAdmin = async () => {
   try {
-    // Connect to database
     await mongoose.connect(config.mongoUri);
     logger.info("Connected to MongoDB for seeding");
 
     const adminEmail = "admin@dating.com";
 
-    // Check if admin already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
 
     if (existingAdmin) {
@@ -28,12 +22,11 @@ const seedAdmin = async () => {
         `Admin with email ${adminEmail} already exists. Skipping seeder.`,
       );
     } else {
-      // Create admin user
       const adminData = {
         firstName: "System",
         lastName: "Admin",
         email: adminEmail,
-        password: "admin", // Will be hashed by pre-save hook
+        password: "admin",
         role: USER_ROLES.ADMIN,
         gender: GENDERS.OTHER,
         dateOfBirth: new Date("1990-01-01"),
@@ -50,7 +43,6 @@ const seedAdmin = async () => {
   } catch (error) {
     logger.error(`Seeding failed: ${error.message}`);
   } finally {
-    // Close connection
     await mongoose.connection.close();
     logger.info("MongoDB connection closed after seeding");
     process.exit(0);

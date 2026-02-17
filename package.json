@@ -8,7 +8,8 @@
     "dev": "cross-env NODE_ENV=development nodemon src/server.js",
     "start": "cross-env NODE_ENV=production node src/server.js",
     "prod": "cross-env NODE_ENV=production node src/server.js",
-    "seed:admin": "node src/shared/utils/seeder.js"
+    "seed:admin": "node src/shared/utils/seeder.js",
+    "seed:demo-users": "node src/shared/utils/demoUserSeeder.js"
   },
   "keywords": [
     "dating",

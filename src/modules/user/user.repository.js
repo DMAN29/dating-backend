@@ -3,6 +3,7 @@ import {
   USER_ROLES,
   ACCOUNT_STATUS,
 } from "../../shared/constants/user.constants.js";
+import { paginate } from "../../shared/utils/pagination.js";
 
 /**
  * Repository for database operations related to Users
@@ -51,28 +52,15 @@ export const deleteById = async (id) => {
 };
 
 export const findAllPaginated = async (page = 1, limit = 10) => {
-  const pageNumber = Number(page) || 1;
-  const limitNumber = Number(limit) || 10;
-  const skip = (pageNumber - 1) * limitNumber;
-
   const filter = { isDeleted: { $ne: true }, role: USER_ROLES.USER };
-  const [users, total] = await Promise.all([
-    User.find(filter)
-      .skip(skip)
-      .select(
-        "firstName lastName email gender dateOfBirth phoneNumber role status",
-      )
-      .limit(limitNumber),
-    User.countDocuments(filter),
-  ]);
-
-  return {
-    users,
-    total,
-    page: pageNumber,
-    limit: limitNumber,
-    totalPages: Math.ceil(total / limitNumber),
-  };
+  return paginate({
+    model: User,
+    filter,
+    projection:
+      "firstName lastName email gender dateOfBirth phoneNumber role status",
+    page,
+    limit,
+  });
 };
 
 export const setBlockedById = async (id, isBlocked) => {

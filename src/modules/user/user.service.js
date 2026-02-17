@@ -62,7 +62,12 @@ export const deleteUserService = async (userId) => {
 
 export const getAllUsersService = async (page, limit) => {
   logger.info(`Service:getAllUsers page=${page} limit=${limit}`);
-  return await findAllPaginated(page, limit);
+  const result = await findAllPaginated(page, limit);
+  const { items, ...meta } = result;
+  return {
+    users: items,
+    ...meta,
+  };
 };
 
 export const disableUserService = async (userId) => {

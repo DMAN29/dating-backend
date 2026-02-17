@@ -1,8 +1,9 @@
 import User from "../user/user.model.js";
 import Swipe from "../swipe/swipe.model.js";
 import Match from "../match/match.model.js";
+import { paginate } from "../../shared/utils/pagination.js";
 
-export const getDiscoverUsers = async (currentUser, limit = 20) => {
+export const getDiscoverUsers = async (currentUser, page = 1, limit = 20) => {
   const userId = currentUser._id;
 
   // Get swiped users
@@ -28,6 +29,7 @@ export const getDiscoverUsers = async (currentUser, limit = 20) => {
     isDeleted: { $ne: true },
     "status.state": "active",
     "status.isBlocked": { $ne: true },
+    role: "user",
   };
 
   // Gender filter
@@ -52,23 +54,35 @@ export const getDiscoverUsers = async (currentUser, limit = 20) => {
     query.dateOfBirth = { $gte: minDOB, $lte: maxDOB };
   }
 
-  // Geo filter (if coordinates exist)
+  // Geo filter (only if coordinates exist and are not [0, 0])
   if (
     currentUser.location?.coordinates?.coordinates &&
-    currentUser.location.coordinates.coordinates.length === 2
+    currentUser.location.coordinates.coordinates.length === 2 &&
+    !(
+      currentUser.location.coordinates.coordinates[0] === 0 &&
+      currentUser.location.coordinates.coordinates[1] === 0
+    )
   ) {
+    const maxDistanceKm = maxDistance || 50;
+    const earthRadiusMeters = 6378137;
+    const maxDistanceRadians = (maxDistanceKm * 1000) / earthRadiusMeters;
+
     query["location.coordinates"] = {
-      $near: {
-        $geometry: {
-          type: "Point",
-          coordinates: currentUser.location.coordinates.coordinates,
-        },
-        $maxDistance: maxDistance * 1000, // km to meters
+      $geoWithin: {
+        $centerSphere: [
+          currentUser.location.coordinates.coordinates,
+          maxDistanceRadians,
+        ],
       },
     };
   }
 
-  return await User.find(query)
-    .select("firstName lastName profilePhotos bio gender dateOfBirth location")
-    .limit(limit);
+  return paginate({
+    model: User,
+    filter: query,
+    projection:
+      "firstName lastName profilePhotos bio gender dateOfBirth location",
+    page,
+    limit,
+  });
 };
