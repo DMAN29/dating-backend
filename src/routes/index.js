@@ -1,6 +1,9 @@
 import express from "express";
 import authRoutes from "../modules/auth/auth.routes.js";
 import userRoutes from "../modules/user/user.routes.js";
+import swipeRoutes from "../modules/swipe/swipe.routes.js";
+import matchRoutes from "../modules/match/match.routes.js";
+import discoverRoutes from "../modules/discover/discover.routes.js";
 
 const router = express.Router();
 
@@ -14,7 +17,13 @@ router.use("/auth", authRoutes);
 // User module routes
 router.use("/users", userRoutes);
 
-// Other modules will be added here:
-// router.use("/matches", matchRoutes);
+// Swipe module routes
+router.use("/swipes", swipeRoutes);
+
+// Match module routes
+router.use("/matches", matchRoutes);
+
+// Discover module routes
+router.use("/discover", discoverRoutes);
 
 export default router;
