@@ -1,6 +1,16 @@
-import { findById, updateById, findByEmail, create, deleteById } from "./user.repository.js";
+import {
+  findById,
+  updateById,
+  findByEmail,
+  create,
+  deleteById,
+  findAllPaginated,
+} from "./user.repository.js";
 import logger from "../../shared/utils/logger.js";
-import { cacheGet, cacheSet, cacheDel } from "../../shared/utils/cache.js";
+import {
+  USER_ROLES,
+  ACCOUNT_STATUS,
+} from "../../shared/constants/user.constants.js";
 
 /**
  * Service for business logic related to Users
@@ -8,16 +18,10 @@ import { cacheGet, cacheSet, cacheDel } from "../../shared/utils/cache.js";
 
 export const getProfileService = async (userId) => {
   logger.info(`Service:getProfile userId=${userId}`);
-  const cached = await cacheGet(`user:${userId}`);
-  if (cached) {
-    logger.debug(`Cache hit for user:${userId}`);
-    return cached;
-  }
   const user = await findById(userId);
   if (!user) {
     throw new Error("User not found");
   }
-  await cacheSet(`user:${userId}`, user, 60 * 1000);
   return user;
 };
 
@@ -27,24 +31,21 @@ export const updateProfileService = async (userId, updateData) => {
   if (!user) {
     throw new Error("User not found");
   }
-  await cacheDel(`user:${userId}`);
+  return user;
+};
+
+export const getUserByIdService = async (userId) => {
+  logger.info(`Service:getUserById userId=${userId}`);
+  const user = await findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
   return user;
 };
 
 export const createAdminService = async (adminData) => {
-  logger.info(`Service:createAdmin email=${adminData.email}`);
-  const existingUser = await findByEmail(adminData.email);
-  if (existingUser) {
-    throw new Error("User already exists with this email");
-  }
-
-  const admin = await create({
-    ...adminData,
-    role: "admin",
-    status: { ...adminData.status, isVerified: true },
-  });
-
-  return admin;
+  logger.info("Service:createAdmin called via API");
+  throw new Error("Admin user cannot be created via API. Use seeder only.");
 };
 
 export const deleteUserService = async (userId) => {
@@ -53,6 +54,34 @@ export const deleteUserService = async (userId) => {
   if (!user) {
     throw new Error("User not found");
   }
-  await cacheDel(`user:${userId}`);
+  if (user.role === USER_ROLES.ADMIN) {
+    throw new Error("Admin cannot be deleted");
+  }
   return user;
+};
+
+export const getAllUsersService = async (page, limit) => {
+  logger.info(`Service:getAllUsers page=${page} limit=${limit}`);
+  return await findAllPaginated(page, limit);
+};
+
+export const disableUserService = async (userId) => {
+  logger.info(`Service:disableUser userId=${userId}`);
+  const user = await findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  if (user.role === USER_ROLES.ADMIN) {
+    throw new Error("Admin status cannot be toggled");
+  }
+  const currentState = user.status?.state || ACCOUNT_STATUS.ACTIVE;
+  const nextState =
+    currentState === ACCOUNT_STATUS.ACTIVE
+      ? ACCOUNT_STATUS.INACTIVE
+      : ACCOUNT_STATUS.ACTIVE;
+  const updated = await updateById(userId, {
+    "status.state": nextState,
+    "status.isBlocked": nextState === ACCOUNT_STATUS.INACTIVE,
+  });
+  return updated;
 };

@@ -33,6 +33,11 @@ export const SUBSCRIPTION_TYPES = {
   PREMIUM: "premium",
 };
 
+export const ACCOUNT_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+};
+
 export const AUTH_PROVIDERS = {
   EMAIL: "email",
   GOOGLE: "google",

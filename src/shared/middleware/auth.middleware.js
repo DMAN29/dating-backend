@@ -1,6 +1,7 @@
 import { verifyToken } from "../utils/jwt.util.js";
 import { sendError } from "../utils/responseFormatter.js";
 import { findById } from "../../modules/auth/auth.repository.js";
+import { ACCOUNT_STATUS } from "../constants/user.constants.js";
 
 /**
  * Middleware to protect routes and validate JWT token
@@ -32,8 +33,8 @@ export const protect = async (req, res, next) => {
       return sendError(res, 401, "User no longer exists");
     }
 
-    if (user.status.isBlocked) {
-      return sendError(res, 403, "Your account has been blocked");
+    if (user.status.isBlocked || user.status.state === ACCOUNT_STATUS.INACTIVE) {
+      return sendError(res, 403, "Your account is not active");
     }
 
     req.user = user;

@@ -5,11 +5,13 @@ import User from "../user/user.model.js";
  */
 
 export const findByEmailWithPassword = async (email) => {
-  return await User.findOne({ email }).select("+password");
+  return await User.findOne({ email, isDeleted: { $ne: true } }).select(
+    "+password",
+  );
 };
 
 export const findById = async (id) => {
-  return await User.findById(id);
+  return await User.findOne({ _id: id, isDeleted: { $ne: true } });
 };
 
 export const createUser = async (userData) => {
@@ -17,15 +19,15 @@ export const createUser = async (userData) => {
 };
 
 export const findByEmail = async (email) => {
-  return await User.findOne({ email });
+  return await User.findOne({ email, isDeleted: { $ne: true } });
 };
 
 export const findByPhone = async (phoneNumber) => {
-  return await User.findOne({ phoneNumber });
+  return await User.findOne({ phoneNumber, isDeleted: { $ne: true } });
 };
 
 export const findByGoogleId = async (googleId) => {
-  return await User.findOne({ googleId });
+  return await User.findOne({ googleId, isDeleted: { $ne: true } });
 };
 
 export const upsertUserByEmail = async (email, data) => {

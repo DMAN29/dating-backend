@@ -17,7 +17,7 @@ import logger from "../../shared/utils/logger.js";
 export const signupController = async (req, res) => {
   logger.info(`Auth signup attempt for email: ${req.body.email}`);
   try {
-    const { user, accessToken, refreshToken } = await register(req.body);
+    const { user, accessToken, refreshToken } = await registerService(req.body);
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -43,7 +43,10 @@ export const loginController = async (req, res) => {
   logger.info(`Auth login attempt for email: ${req.body.email}`);
   try {
     const { email, password } = req.body;
-    const { user, accessToken, refreshToken } = await login(email, password);
+    const { user, accessToken, refreshToken } = await loginService(
+      email,
+      password,
+    );
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
@@ -88,7 +91,7 @@ export const refreshController = async (req, res) => {
       return sendError(res, 400, "Refresh token is required");
     }
 
-    const { accessToken } = await refresh(refreshToken);
+    const { accessToken } = await refreshService(refreshToken);
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       maxAge: ms(config.accessTokenExpires),
@@ -114,7 +117,7 @@ export const googleLoginController = async (req, res) => {
   try {
     const { idToken } = req.body;
     const { user, accessToken, refreshToken, profile } =
-      await loginWithGoogle(idToken);
+      await loginWithGoogleService(idToken);
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       maxAge: ms(config.accessTokenExpires),
@@ -135,7 +138,7 @@ export const googleLoginController = async (req, res) => {
 export const sendOtpController = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
-    const result = await sendOtp(phoneNumber);
+    const result = await sendOtpService(phoneNumber);
     return sendSuccess(res, 200, "OTP sent", {
       sent: result.sent,
       code: result.code,
@@ -148,7 +151,7 @@ export const sendOtpController = async (req, res) => {
 export const verifyOtpController = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
-    const { user, accessToken, refreshToken, profile } = await verifyOtp(
+    const { user, accessToken, refreshToken, profile } = await verifyOtpService(
       phoneNumber,
       otp,
     );

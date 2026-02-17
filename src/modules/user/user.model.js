@@ -7,6 +7,7 @@ import {
   SUBSCRIPTION_TYPES,
   GEO_TYPES,
   AUTH_PROVIDERS,
+  ACCOUNT_STATUS,
 } from "../../shared/constants/user.constants.js";
 
 const userSchema = new mongoose.Schema(
@@ -31,7 +32,7 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.authProvider === AUTH_PROVIDERS.EMAIL;
       },
-      minlength: [6, "Password must be at least 6 characters"],
+      minlength: [5, "Password must be at least 5 characters"],
       select: false,
     },
     phoneNumber: {
@@ -122,6 +123,15 @@ const userSchema = new mongoose.Schema(
         enum: Object.values(SUBSCRIPTION_TYPES),
         default: SUBSCRIPTION_TYPES.FREE,
       },
+      state: {
+        type: String,
+        enum: Object.values(ACCOUNT_STATUS),
+        default: ACCOUNT_STATUS.ACTIVE,
+      },
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
     lastActive: {
       type: Date,
