@@ -60,9 +60,36 @@ export const deleteUserService = async (userId) => {
   return user;
 };
 
-export const getAllUsersService = async (page, limit) => {
-  logger.info(`Service:getAllUsers page=${page} limit=${limit}`);
-  const result = await findAllPaginated(page, limit);
+export const getAllUsersService = async (query) => {
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    gender,
+    state,
+    isBlocked,
+    subscriptionType,
+    minAge,
+    maxAge,
+    city,
+  } = query;
+
+  logger.info(
+    `Service:getAllUsers page=${page} limit=${limit} search=${search} gender=${gender} state=${state} isBlocked=${isBlocked} subscriptionType=${subscriptionType} minAge=${minAge} maxAge=${maxAge} city=${city}`,
+  );
+
+  const filters = {
+    search,
+    gender,
+    state,
+    isBlocked,
+    subscriptionType,
+    minAge,
+    maxAge,
+    city,
+  };
+
+  const result = await findAllPaginated(page, limit, filters);
   const { items, ...meta } = result;
   return {
     users: items,

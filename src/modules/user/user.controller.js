@@ -75,12 +75,35 @@ export const deleteUserController = async (req, res) => {
 };
 
 export const getAllUsersController = async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    gender,
+    state,
+    isBlocked,
+    subscriptionType,
+    minAge,
+    maxAge,
+    city,
+  } = req.query;
+
   logger.info(
-    `Admin ${req.user.id} fetching users page=${page} limit=${limit}`,
+    `Admin ${req.user.id} fetching users page=${page} limit=${limit} search=${search} gender=${gender} state=${state} isBlocked=${isBlocked} subscriptionType=${subscriptionType} minAge=${minAge} maxAge=${maxAge} city=${city}`,
   );
   try {
-    const result = await getAllUsersService(page, limit);
+    const result = await getAllUsersService({
+      page,
+      limit,
+      search,
+      gender,
+      state,
+      isBlocked,
+      subscriptionType,
+      minAge,
+      maxAge,
+      city,
+    });
     return sendSuccess(res, 200, "Users fetched successfully", result);
   } catch (error) {
     logger.error(`Failed to fetch users: ${error.message}`);

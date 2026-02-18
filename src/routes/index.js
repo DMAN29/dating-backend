@@ -23,6 +23,7 @@
 
 import express from "express";
 import publicRoutes from "./public.routes.js";
+import fileRoutes from "./file.routes.js";
 import userRoutes from "./user.routes.js";
 import adminRoutes from "./admin.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";
@@ -34,5 +35,6 @@ router.use("/auth", authRoutes);
 router.use("/public", publicRoutes);
 router.use("/user", userRoutes);
 router.use("/admin", adminRoutes);
+router.use("/files", fileRoutes);
 
 export default router;

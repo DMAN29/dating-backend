@@ -2,22 +2,25 @@ import express from "express";
 import {
   getMyMatchesController,
   unmatchController,
+  adminGetAllMatchesController,
 } from "./match.controller.js";
-import { protect } from "../../shared/middleware/auth.middleware.js";
+import { protect, authorize } from "../../shared/middleware/auth.middleware.js";
 import { unmatchValidation } from "./match.validation.js";
 
 const router = express.Router();
 
-/**
- * GET /api/matches
- * Get all matches of logged-in user
- */
 router.get("/", protect, getMyMatchesController);
 
-/**
- * DELETE /api/matches/:matchId
- * Unmatch a user
- */
 router.delete("/:matchId", protect, unmatchValidation, unmatchController);
 
+const adminMatchRouter = express.Router();
+
+adminMatchRouter.get(
+  "/",
+  protect,
+  authorize("admin"),
+  adminGetAllMatchesController,
+);
+
 export default router;
+export { adminMatchRouter };

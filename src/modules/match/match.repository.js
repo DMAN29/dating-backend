@@ -1,6 +1,6 @@
 import Match from "./match.model.js";
+import { paginate } from "../../shared/utils/pagination.js";
 
-// Create match safely (used in swipe service)
 export const createMatch = async (userA, userB) => {
   const sortedUsers = [userA, userB].map((id) => id.toString()).sort();
 
@@ -15,7 +15,6 @@ export const createMatch = async (userA, userB) => {
   );
 };
 
-// Find match between two users
 export const findMatchBetweenUsers = async (userA, userB) => {
   const sortedUsers = [userA, userB].map((id) => id.toString()).sort();
 
@@ -25,7 +24,6 @@ export const findMatchBetweenUsers = async (userA, userB) => {
   });
 };
 
-// Get all matches of a user
 export const findMatchesByUser = async (userId) => {
   return await Match.find({
     users: userId,
@@ -35,11 +33,24 @@ export const findMatchesByUser = async (userId) => {
     .sort({ matchedAt: -1 });
 };
 
-// Soft delete match
 export const softDeleteMatch = async (matchId) => {
   return await Match.findByIdAndUpdate(
     matchId,
     { isDeleted: true },
     { new: true },
   );
+};
+
+export const findAllMatchesPaginated = async (page = 1, limit = 10) => {
+  return paginate({
+    model: Match,
+    filter: { isDeleted: { $ne: true } },
+    page,
+    limit,
+    sort: { matchedAt: -1 },
+    populate: {
+      path: "users",
+      select: "firstName lastName email gender",
+    },
+  });
 };

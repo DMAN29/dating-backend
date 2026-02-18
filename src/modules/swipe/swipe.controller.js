@@ -1,4 +1,4 @@
-import { swipeService } from "./swipe.service.js";
+import { swipeService, getAllSwipesAdminService } from "./swipe.service.js";
 import {
   sendSuccess,
   sendError,
@@ -18,5 +18,16 @@ export const swipeController = async (req, res) => {
   } catch (error) {
     logger.error(`Swipe failed for user ${currentUserId}: ${error.message}`);
     return sendError(res, 400, error.message || "Swipe failed");
+  }
+};
+
+export const adminGetAllSwipesController = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const data = await getAllSwipesAdminService(page, limit);
+    return sendSuccess(res, 200, "Swipes fetched successfully", data);
+  } catch (error) {
+    logger.error(`Failed to fetch swipes: ${error.message}`);
+    return sendError(res, 400, error.message);
   }
 };

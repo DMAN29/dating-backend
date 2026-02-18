@@ -19,10 +19,6 @@ export const signupController = async (req, res) => {
   try {
     const { user, accessToken, refreshToken } = await registerService(req.body);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      maxAge: ms(config.accessTokenExpires),
-    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
@@ -48,10 +44,6 @@ export const loginController = async (req, res) => {
       password,
     );
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      maxAge: ms(config.accessTokenExpires),
-    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
@@ -70,14 +62,12 @@ export const loginController = async (req, res) => {
 
 export const logoutController = async (req, res) => {
   logger.info(`User logout: ${req.user?.id}`);
-  res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
   return sendSuccess(res, 200, "Logged out successfully");
 };
 
 export const logoutAllController = async (req, res) => {
   logger.info(`User logout all sessions: ${req.user?.id}`);
-  res.clearCookie("accessToken");
   res.clearCookie("refreshToken");
   return sendSuccess(res, 200, "Logged out from all sessions successfully");
 };
@@ -92,10 +82,6 @@ export const refreshController = async (req, res) => {
     }
 
     const { accessToken } = await refreshService(refreshToken);
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      maxAge: ms(config.accessTokenExpires),
-    });
 
     logger.info("Token refreshed successfully");
     return sendSuccess(res, 200, "Token refreshed successfully", {
@@ -118,10 +104,6 @@ export const googleLoginController = async (req, res) => {
     const { idToken } = req.body;
     const { user, accessToken, refreshToken, profile } =
       await loginWithGoogleService(idToken);
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      maxAge: ms(config.accessTokenExpires),
-    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
@@ -155,10 +137,6 @@ export const verifyOtpController = async (req, res) => {
       phoneNumber,
       otp,
     );
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      maxAge: ms(config.accessTokenExpires),
-    });
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),

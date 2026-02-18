@@ -4,6 +4,7 @@ import {
   findMatchesByUser,
   findMatchBetweenUsers,
   softDeleteMatch,
+  findAllMatchesPaginated,
 } from "./match.repository.js";
 
 export const getMyMatchesService = async (userId) => {
@@ -30,4 +31,8 @@ export const unmatchService = async (userId, matchId) => {
   }
 
   return await softDeleteMatch(matchId);
+};
+
+export const getAllMatchesAdminService = async (page, limit) => {
+  return await findAllMatchesPaginated(page, limit);
 };

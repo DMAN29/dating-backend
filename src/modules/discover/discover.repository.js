@@ -2,15 +2,19 @@ import User from "../user/user.model.js";
 import Swipe from "../swipe/swipe.model.js";
 import Match from "../match/match.model.js";
 import { paginate } from "../../shared/utils/pagination.js";
+import {
+  GENDERS,
+  INTEREST_PREFERENCES,
+} from "../../shared/constants/user.constants.js";
 
-export const getDiscoverUsers = async (currentUser, page = 1, limit = 20) => {
+export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   const userId = currentUser._id;
 
-  // Get swiped users
+  // 🔹 1️⃣ Get users already swiped by current user
   const swipes = await Swipe.find({ fromUser: userId }).select("toUser");
   const swipedIds = swipes.map((s) => s.toUser);
 
-  // Get matched users
+  // 🔹 2️⃣ Get matched users
   const matches = await Match.find({
     users: userId,
     isDeleted: { $ne: true },
@@ -22,8 +26,11 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 20) => {
 
   const excludedIds = [userId, ...swipedIds, ...matchedIds];
 
-  const { interestedIn, ageRange, maxDistance } = currentUser.preference;
+  const { interestedIn, ageRange, maxDistance } = currentUser.preference || {};
 
+  const currentGender = currentUser.gender;
+
+  // 🔹 3️⃣ Base query
   const query = {
     _id: { $nin: excludedIds },
     isDeleted: { $ne: true },
@@ -32,29 +39,53 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 20) => {
     role: "user",
   };
 
-  // Gender filter
-  if (interestedIn !== "both") {
-    query.gender = interestedIn;
-  }
+  // ======================================================
+  // ✅ UNIVERSAL MUTUAL COMPATIBILITY LOGIC (FIXED)
+  // ======================================================
 
-  // Age filter
+  // Which genders current user wants to see
+  const gendersCurrentUserLikes =
+    interestedIn === INTEREST_PREFERENCES.BOTH
+      ? [GENDERS.MALE, GENDERS.FEMALE]
+      : [interestedIn];
+
+  // Candidate must be one of those genders
+  query.gender = { $in: gendersCurrentUserLikes };
+
+  // Candidate must also like current user's gender
+  query["preference.interestedIn"] = {
+    $in: [currentGender, INTEREST_PREFERENCES.BOTH],
+  };
+
+  // ======================================================
+  // 🔹 4️⃣ Age Filter
+  // ======================================================
+
   if (ageRange) {
     const today = new Date();
+
     const minDOB = new Date(
       today.getFullYear() - ageRange.max,
       today.getMonth(),
       today.getDate(),
     );
+
     const maxDOB = new Date(
       today.getFullYear() - ageRange.min,
       today.getMonth(),
       today.getDate(),
     );
 
-    query.dateOfBirth = { $gte: minDOB, $lte: maxDOB };
+    query.dateOfBirth = {
+      $gte: minDOB,
+      $lte: maxDOB,
+    };
   }
 
-  // Geo filter (only if coordinates exist and are not [0, 0])
+  // ======================================================
+  // 🔹 5️⃣ Geo Filter
+  // ======================================================
+
   if (
     currentUser.location?.coordinates?.coordinates &&
     currentUser.location.coordinates.coordinates.length === 2 &&
@@ -76,6 +107,10 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 20) => {
       },
     };
   }
+
+  // ======================================================
+  // 🔹 6️⃣ Pagination
+  // ======================================================
 
   return paginate({
     model: User,

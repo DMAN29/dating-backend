@@ -4,7 +4,7 @@ const otpSchema = new mongoose.Schema(
   {
     phoneNumber: { type: String, index: true },
     code: { type: String },
-    expiresAt: { type: Date, index: true },
+    expiresAt: { type: Date },
     attempts: { type: Number, default: 0 },
   },
   { timestamps: true },
@@ -36,4 +36,3 @@ export const verifyOtp = async (phoneNumber, code) => {
   await Otp.updateOne({ phoneNumber }, { $inc: { attempts: 1 } });
   return false;
 };
-

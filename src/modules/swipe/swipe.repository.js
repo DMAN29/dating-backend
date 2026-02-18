@@ -1,11 +1,10 @@
 import Swipe from "./swipe.model.js";
+import { paginate } from "../../shared/utils/pagination.js";
 
-// Create swipe
 export const createSwipe = async (data) => {
   return await Swipe.create(data);
 };
 
-// Find reverse ACCEPT swipe (for match check)
 export const findReverseAcceptSwipe = async (fromUser, toUser) => {
   return await Swipe.findOne({
     fromUser,
@@ -14,8 +13,27 @@ export const findReverseAcceptSwipe = async (fromUser, toUser) => {
   });
 };
 
-// Get all swiped user IDs (for discover exclusion)
 export const findSwipedUserIds = async (userId) => {
   const swipes = await Swipe.find({ fromUser: userId }).select("toUser");
   return swipes.map((s) => s.toUser);
+};
+
+export const findAllSwipesPaginated = async (page = 1, limit = 10) => {
+  return paginate({
+    model: Swipe,
+    filter: {},
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: [
+      {
+        path: "fromUser",
+        select: "firstName lastName email  gender",
+      },
+      {
+        path: "toUser",
+        select: "firstName lastName email  gender",
+      },
+    ],
+  });
 };

@@ -32,3 +32,8 @@ coverage/
 # Build directories
 dist/
 build/
+
+
+public/uploads/
+
+src/scripts/

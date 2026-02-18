@@ -51,13 +51,77 @@ export const deleteById = async (id) => {
   return await User.findByIdAndUpdate(id, updateData, { new: true });
 };
 
-export const findAllPaginated = async (page = 1, limit = 10) => {
+export const findAllPaginated = async (page = 1, limit = 10, filters = {}) => {
+  const {
+    search,
+    gender,
+    state,
+    isBlocked,
+    subscriptionType,
+    minAge,
+    maxAge,
+    city,
+  } = filters || {};
+
   const filter = { isDeleted: { $ne: true }, role: USER_ROLES.USER };
+
+  if (search) {
+    const regex = new RegExp(search, "i");
+    filter.$or = [{ firstName: regex }, { lastName: regex }, { email: regex }];
+  }
+
+  if (gender) {
+    filter.gender = gender;
+  }
+
+  if (state) {
+    filter["status.state"] = state;
+  }
+
+  if (typeof isBlocked !== "undefined") {
+    const blockedBool =
+      typeof isBlocked === "string" ? isBlocked === "true" : !!isBlocked;
+    filter["status.isBlocked"] = blockedBool;
+  }
+
+  if (subscriptionType) {
+    filter["status.subscriptionType"] = subscriptionType;
+  }
+
+  if (city) {
+    filter["location.city"] = new RegExp(city, "i");
+  }
+
+  const now = new Date();
+  const dobFilter = {};
+
+  if (minAge !== undefined && minAge !== null && minAge !== "") {
+    const minAgeNum = Number(minAge);
+    if (!Number.isNaN(minAgeNum)) {
+      const dobMax = new Date(now);
+      dobMax.setFullYear(dobMax.getFullYear() - minAgeNum);
+      dobFilter.$lte = dobMax;
+    }
+  }
+
+  if (maxAge !== undefined && maxAge !== null && maxAge !== "") {
+    const maxAgeNum = Number(maxAge);
+    if (!Number.isNaN(maxAgeNum)) {
+      const dobMin = new Date(now);
+      dobMin.setFullYear(dobMin.getFullYear() - maxAgeNum);
+      dobFilter.$gte = dobMin;
+    }
+  }
+
+  if (Object.keys(dobFilter).length > 0) {
+    filter.dateOfBirth = dobFilter;
+  }
+
   return paginate({
     model: User,
     filter,
     projection:
-      "firstName lastName email gender dateOfBirth phoneNumber role status",
+      "firstName lastName email gender dateOfBirth phoneNumber role status location status preference",
     page,
     limit,
   });

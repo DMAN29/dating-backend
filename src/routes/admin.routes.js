@@ -1,13 +1,12 @@
 import express from "express";
 import { adminUserRouter } from "../modules/user/user.routes.js";
-import { protect, authorize } from "../shared/middleware/auth.middleware.js";
+import { adminSwipeRouter } from "../modules/swipe/swipe.routes.js";
+import { adminMatchRouter } from "../modules/match/match.routes.js";
 
 const router = express.Router();
 
-// Admin middleware
-router.use(protect);
-router.use(authorize("admin"));
-
 router.use("/users", adminUserRouter);
+router.use("/swipes", adminSwipeRouter);
+router.use("/matches", adminMatchRouter);
 
 export default router;

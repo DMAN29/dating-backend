@@ -2,27 +2,26 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import path from "path";
 import routes from "./routes/index.js";
 import errorMiddleware from "./shared/middleware/error.middleware.js";
 import corsOptions from "./config/cors.config.js";
 
 const app = express();
 
-// Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Root route
+app.use("/uploads", express.static(path.join("public", "uploads")));
+
 app.get("/", (req, res) => {
   res.json({ message: "Dating Backend Running ❤️" });
 });
 
-// API Routes
 app.use("/api", routes);
 
-// Error Middleware
 app.use(errorMiddleware);
 
 export default app;

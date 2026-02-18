@@ -1,7 +1,7 @@
 import User from "../user/user.model.js";
 import { getDiscoverUsers } from "./discover.repository.js";
 
-export const discoverService = async (userId, page = 1, limit = 20) => {
+export const discoverService = async (userId, page = 1, limit = 10) => {
   const currentUser = await User.findById(userId);
 
   if (!currentUser) {

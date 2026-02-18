@@ -3,6 +3,7 @@ export const paginate = async ({
   filter = {},
   projection,
   sort,
+  populate,
   page = 1,
   limit = 10,
 }) => {
@@ -23,6 +24,14 @@ export const paginate = async ({
     query.sort(sort);
   }
 
+  if (populate) {
+    if (Array.isArray(populate)) {
+      populate.forEach((p) => query.populate(p));
+    } else {
+      query.populate(populate);
+    }
+  }
+
   const [items, total] = await Promise.all([
     query,
     model.countDocuments(filter),
@@ -36,4 +45,3 @@ export const paginate = async ({
     totalPages: Math.ceil(total / limitNumber),
   };
 };
-
