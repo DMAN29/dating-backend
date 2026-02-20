@@ -1,4 +1,8 @@
-import { swipeService, getAllSwipesAdminService } from "./swipe.service.js";
+import {
+  swipeService,
+  getAllSwipesAdminService,
+  getIncomingLikesService,
+} from "./swipe.service.js";
 import {
   sendSuccess,
   sendError,
@@ -29,5 +33,24 @@ export const adminGetAllSwipesController = async (req, res) => {
   } catch (error) {
     logger.error(`Failed to fetch swipes: ${error.message}`);
     return sendError(res, 400, error.message);
+  }
+};
+
+export const getIncomingLikesController = async (req, res) => {
+  const currentUserId = req.user.id;
+  const { page = 1, limit = 10 } = req.query;
+
+  try {
+    const data = await getIncomingLikesService(currentUserId, page, limit);
+    return sendSuccess(res, 200, "Incoming likes fetched successfully", data);
+  } catch (error) {
+    logger.error(
+      `Failed to fetch incoming likes for user ${currentUserId}: ${error.message}`,
+    );
+    return sendError(
+      res,
+      400,
+      error.message || "Failed to fetch incoming likes",
+    );
   }
 };

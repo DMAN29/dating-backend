@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import {
   createSwipe,
   findReverseAcceptSwipe,
+  findIncomingAcceptsPaginated,
   findAllSwipesPaginated,
 } from "./swipe.repository.js";
 import Match from "../match/match.model.js";
@@ -69,4 +70,8 @@ export const swipeService = async (currentUserId, targetUserId, action) => {
 
 export const getAllSwipesAdminService = async (page, limit) => {
   return await findAllSwipesPaginated(page, limit);
+};
+
+export const getIncomingLikesService = async (userId, page, limit) => {
+  return await findIncomingAcceptsPaginated(userId, page, limit);
 };

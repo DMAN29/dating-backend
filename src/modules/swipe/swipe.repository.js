@@ -18,6 +18,33 @@ export const findSwipedUserIds = async (userId) => {
   return swipes.map((s) => s.toUser);
 };
 
+export const findIncomingAcceptsPaginated = async (
+  userId,
+  page = 1,
+  limit = 10,
+) => {
+  const swipedIds = await findSwipedUserIds(userId);
+
+  const filter = {
+    toUser: userId,
+    action: "accept",
+    fromUser: { $nin: [userId, ...swipedIds] },
+  };
+
+  return paginate({
+    model: Swipe,
+    filter,
+    page,
+    limit,
+    sort: { createdAt: -1 },
+    populate: {
+      path: "fromUser",
+      select:
+        "firstName lastName email gender dateOfBirth profilePhotos location",
+    },
+  });
+};
+
 export const findAllSwipesPaginated = async (page = 1, limit = 10) => {
   return paginate({
     model: Swipe,
