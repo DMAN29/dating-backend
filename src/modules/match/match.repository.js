@@ -33,6 +33,27 @@ export const findMatchesByUser = async (userId) => {
     .sort({ matchedAt: -1 });
 };
 
+export const findMatchesByUserPaginated = async (
+  userId,
+  page = 1,
+  limit = 10,
+) => {
+  return paginate({
+    model: Match,
+    filter: {
+      users: userId,
+      isDeleted: { $ne: true },
+    },
+    page,
+    limit,
+    sort: { matchedAt: -1 },
+    populate: {
+      path: "users",
+      select: "firstName lastName profilePhotos bio",
+    },
+  });
+};
+
 export const softDeleteMatch = async (matchId) => {
   return await Match.findByIdAndUpdate(
     matchId,

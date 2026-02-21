@@ -11,9 +11,10 @@ import logger from "../../shared/utils/logger.js";
 
 export const getMyMatchesController = async (req, res) => {
   try {
-    const matches = await getMyMatchesService(req.user.id);
+    const { page = 1, limit = 10 } = req.query;
+    const data = await getMyMatchesService(req.user.id, page, limit);
 
-    return sendSuccess(res, 200, "Matches fetched successfully", matches);
+    return sendSuccess(res, 200, "Matches fetched successfully", data);
   } catch (error) {
     logger.error(`Failed to fetch matches: ${error.message}`);
     return sendError(res, 400, error.message);

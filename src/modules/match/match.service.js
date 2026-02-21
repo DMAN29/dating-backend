@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 import Match from "./match.model.js";
 import {
-  findMatchesByUser,
+  findMatchesByUserPaginated,
   findMatchBetweenUsers,
   softDeleteMatch,
   findAllMatchesPaginated,
 } from "./match.repository.js";
 
-export const getMyMatchesService = async (userId) => {
-  return await findMatchesByUser(userId);
+export const getMyMatchesService = async (userId, page, limit) => {
+  return await findMatchesByUserPaginated(userId, page, limit);
 };
 
 export const getMatchBetweenUsersService = async (userA, userB) => {

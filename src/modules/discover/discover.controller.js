@@ -9,7 +9,7 @@ export const discoverController = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
 
-    const result = await discoverService(req.user.id, page, limit);
+    const result = await discoverService(req.user, page, limit);
     const { items, ...meta } = result;
 
     return sendSuccess(res, 200, "Discover users fetched successfully", {
