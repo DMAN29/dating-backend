@@ -1,6 +1,6 @@
-import User from "../user/user.model.js";
-import Swipe from "../swipe/swipe.model.js";
-import Match from "../match/match.model.js";
+import { findDiscoverUsersPaginated } from "../user/user.repository.js";
+import { findSwipedUserIds } from "../swipe/swipe.repository.js";
+import { findMatchedUserIds } from "../match/match.repository.js";
 import { paginate } from "../../shared/utils/pagination.js";
 import {
   GENDERS,
@@ -11,18 +11,10 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   const userId = currentUser._id;
 
   // 🔹 1️⃣ Get users already swiped by current user
-  const swipes = await Swipe.find({ fromUser: userId }).select("toUser");
-  const swipedIds = swipes.map((s) => s.toUser);
+  const swipedIds = await findSwipedUserIds(userId);
 
   // 🔹 2️⃣ Get matched users
-  const matches = await Match.find({
-    users: userId,
-    isDeleted: { $ne: true },
-  }).select("users");
-
-  const matchedIds = matches.flatMap((m) =>
-    m.users.filter((id) => id.toString() !== userId.toString()),
-  );
+  const matchedIds = await findMatchedUserIds(userId);
 
   const excludedIds = [userId, ...swipedIds, ...matchedIds];
 
@@ -117,12 +109,5 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   // 🔹 7️⃣ Pagination
   // ======================================================
 
-  return paginate({
-    model: User,
-    filter: query,
-    projection:
-      "firstName lastName profilePhotos bio gender dateOfBirth location",
-    page,
-    limit,
-  });
+  return findDiscoverUsersPaginated(query, page, limit);
 };

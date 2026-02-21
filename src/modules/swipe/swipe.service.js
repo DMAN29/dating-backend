@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
+import { redisClient } from "../../config/redisClient.js";
 import {
   createSwipe,
-  findReverseAcceptSwipe,
   findIncomingAcceptsPaginated,
   findAllSwipesPaginated,
 } from "./swipe.repository.js";
-import Match from "../match/match.model.js";
-import User from "../user/user.model.js";
+import { findActiveById } from "../user/user.repository.js";
+import { createMatchService } from "../match/match.service.js";
 
 export const swipeService = async (currentUserId, targetUserId, action) => {
   if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
@@ -17,48 +17,53 @@ export const swipeService = async (currentUserId, targetUserId, action) => {
     throw new Error("You cannot swipe yourself");
   }
 
-  // Check if target user exists and is active
-  const targetUser = await User.findOne({
-    _id: targetUserId,
-    isDeleted: { $ne: true },
-    "status.state": "active",
-    "status.isBlocked": { $ne: true },
-  });
+  // 🔍 Validate target user
+  const targetUser = await findActiveById(targetUserId);
 
   if (!targetUser) {
     throw new Error("Target user not found or inactive");
   }
 
-  // Save swipe
+  const swipedKey = `swiped:${currentUserId}`;
+  const likeKey = `likes:${currentUserId}`;
+  const reverseLikeKey = `likes:${targetUserId}`;
+
+  // 🚀 Check duplicate swipe using Redis
+  const alreadySwiped = await redisClient.sIsMember(
+    swipedKey,
+    targetUserId.toString(),
+  );
+
+  if (alreadySwiped) {
+    throw new Error("You already swiped this user");
+  }
+
+  // 💾 Save in Mongo (source of truth)
   await createSwipe({
     fromUser: currentUserId,
     toUser: targetUserId,
     action,
   });
 
+  // 🔄 Store in Redis
+  await redisClient.sAdd(swipedKey, targetUserId.toString());
+
   let isMatch = false;
   let matchData = null;
 
-  // Only check match if action is ACCEPT
   if (action === "accept") {
-    const reverseSwipe = await findReverseAcceptSwipe(
-      targetUserId,
-      currentUserId,
+    // ❤️ Add like
+    await redisClient.sAdd(likeKey, targetUserId.toString());
+
+    // ⚡ Fast reverse like check
+    const reverseLiked = await redisClient.sIsMember(
+      reverseLikeKey,
+      currentUserId.toString(),
     );
 
-    if (reverseSwipe) {
+    if (reverseLiked) {
       isMatch = true;
-
-      // Prevent duplicate match creation
-      const sortedUsers = [currentUserId, targetUserId]
-        .map((id) => id.toString())
-        .sort();
-
-      matchData = await Match.findOneAndUpdate(
-        { users: sortedUsers },
-        { users: sortedUsers },
-        { upsert: true, new: true, setDefaultsOnInsert: true },
-      );
+      matchData = await createMatchService(currentUserId, targetUserId);
     }
   }
 

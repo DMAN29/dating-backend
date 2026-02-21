@@ -27,7 +27,8 @@ const swipeSchema = new mongoose.Schema(
 
 // 🚀 Prevent duplicate swipe
 swipeSchema.index({ fromUser: 1, toUser: 1 }, { unique: true });
-
+swipeSchema.index({ toUser: 1, action: 1 }); // Who liked me?
+swipeSchema.index({ createdAt: -1 }); // Pagination / analytics
 const Swipe = mongoose.model("Swipe", swipeSchema);
 
 export default Swipe;

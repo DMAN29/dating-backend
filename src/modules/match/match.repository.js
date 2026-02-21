@@ -33,6 +33,17 @@ export const findMatchesByUser = async (userId) => {
     .sort({ matchedAt: -1 });
 };
 
+export const findMatchedUserIds = async (userId) => {
+  const matches = await Match.find({
+    users: userId,
+    isDeleted: { $ne: true },
+  }).select("users");
+
+  return matches.flatMap((m) =>
+    m.users.filter((id) => id.toString() !== userId.toString()),
+  );
+};
+
 export const findMatchesByUserPaginated = async (
   userId,
   page = 1,
@@ -60,6 +71,14 @@ export const softDeleteMatch = async (matchId) => {
     { isDeleted: true },
     { new: true },
   );
+};
+
+export const findActiveMatchForUser = async (matchId, userId) => {
+  return await Match.findOne({
+    _id: matchId,
+    users: userId,
+    isDeleted: { $ne: true },
+  });
 };
 
 export const findAllMatchesPaginated = async (page = 1, limit = 10) => {

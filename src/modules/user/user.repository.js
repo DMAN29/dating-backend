@@ -17,6 +17,22 @@ export const findByEmail = async (email) => {
   return await User.findOne({ email, isDeleted: { $ne: true } });
 };
 
+export const findByEmailWithPassword = async (email) => {
+  return await User.findOne({
+    email: email.toLowerCase(),
+    isDeleted: { $ne: true },
+  }).select("+password");
+};
+
+export const findActiveById = async (id) => {
+  return await User.findOne({
+    _id: id,
+    isDeleted: { $ne: true },
+    "status.state": ACCOUNT_STATUS.ACTIVE,
+    "status.isBlocked": { $ne: true },
+  });
+};
+
 export const create = async (userData) => {
   return await User.create(userData);
 };
@@ -60,6 +76,70 @@ export const deleteById = async (id) => {
   }
 
   await user.save();
+
+  return user;
+};
+
+export const findDiscoverUsersPaginated = async (filter, page, limit) =>
+  paginate({
+    model: User,
+    filter,
+    projection:
+      "firstName lastName profilePhotos bio gender dateOfBirth location",
+    page,
+    limit,
+  });
+
+export const findByPhone = async (phoneNumber) => {
+  return await User.findOne({
+    phoneNumber,
+    isDeleted: { $ne: true },
+  });
+};
+
+export const findByGoogleId = async (googleId) => {
+  return await User.findOne({
+    googleId,
+    isDeleted: { $ne: true },
+  });
+};
+
+export const upsertByEmail = async (email, data) => {
+  let user = await User.findOne({
+    email: email.toLowerCase(),
+    isDeleted: { $ne: true },
+  });
+
+  if (user) {
+    Object.assign(user, data);
+    await user.save();
+    return user;
+  }
+
+  user = await User.create({
+    ...data,
+    email: email.toLowerCase(),
+  });
+
+  return user;
+};
+
+export const upsertByPhone = async (phoneNumber, data) => {
+  let user = await User.findOne({
+    phoneNumber,
+    isDeleted: { $ne: true },
+  });
+
+  if (user) {
+    Object.assign(user, data);
+    await user.save();
+    return user;
+  }
+
+  user = await User.create({
+    ...data,
+    phoneNumber,
+  });
 
   return user;
 };

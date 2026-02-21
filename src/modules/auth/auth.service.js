@@ -15,7 +15,7 @@ import {
 
 import { OAuth2Client } from "google-auth-library";
 import { AUTH_PROVIDERS } from "../../shared/constants/user.constants.js";
-import { setOtp, verifyOtp as verifyOtpCode } from "./otp.repository.js";
+import { generateOTP, storeOTP, verifyStoredOTP } from "./otp.service.js";
 import { config } from "../../config/env.js";
 import logger from "../../shared/utils/logger.js";
 
@@ -136,30 +136,31 @@ export const loginWithGoogleService = async (idToken) => {
 };
 
 /**
- * Send OTP
+ * Send OTP (Redis Based)
  */
 export const sendOtpService = async (phoneNumber) => {
   logger.info(`Service:sendOtp phone=${phoneNumber}`);
 
-  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const otp = generateOTP();
 
-  await setOtp(phoneNumber, code, 300);
+  await storeOTP(phoneNumber, otp);
 
   return {
     sent: true,
-    code: config.nodeEnv === "development" ? code : undefined,
+    code: config.nodeEnv === "development" ? otp : undefined,
   };
 };
 
 /**
- * Verify OTP (Phone Login)
+ * Verify OTP (Phone Login - Redis Based)
  */
 export const verifyOtpService = async (phoneNumber, otp) => {
   logger.info(`Service:verifyOtp phone=${phoneNumber}`);
 
-  const ok = await verifyOtpCode(phoneNumber, otp);
-  if (!ok) {
-    throw new Error("Invalid or expired OTP");
+  const result = await verifyStoredOTP(phoneNumber, otp);
+
+  if (!result.success) {
+    throw new Error(result.message);
   }
 
   const user = await upsertUserByPhone(phoneNumber, {
