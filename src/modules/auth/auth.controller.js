@@ -6,28 +6,33 @@ import {
   sendOtpService,
   verifyOtpService,
 } from "./auth.service.js";
+
 import {
   sendSuccess,
   sendError,
 } from "../../shared/utils/responseFormatter.js";
+
 import { config } from "../../config/env.js";
 import ms from "ms";
 import logger from "../../shared/utils/logger.js";
 
+/**
+ * Email Signup
+ */
 export const signupController = async (req, res) => {
   logger.info(`Auth signup attempt for email: ${req.body.email}`);
+
   try {
-    const { user, accessToken, refreshToken } = await registerService(req.body);
+    const { accessToken, refreshToken, user } = await registerService(req.body);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
     });
 
-    logger.info(`User registered successfully: ${user.email}`);
     return sendSuccess(res, 201, "User registered successfully", {
       accessToken,
-      profile: { isNew: true, isComplete: user.profileComplete },
+      user,
     });
   } catch (error) {
     logger.error(`Signup failed: ${error.message}`);
@@ -35,11 +40,16 @@ export const signupController = async (req, res) => {
   }
 };
 
+/**
+ * Email Login
+ */
 export const loginController = async (req, res) => {
   logger.info(`Auth login attempt for email: ${req.body.email}`);
+
   try {
     const { email, password } = req.body;
-    const { user, accessToken, refreshToken } = await loginService(
+
+    const { accessToken, refreshToken, user } = await loginService(
       email,
       password,
     );
@@ -49,10 +59,9 @@ export const loginController = async (req, res) => {
       maxAge: ms(config.refreshTokenExpires),
     });
 
-    logger.info(`User logged in successfully: ${user.email}`);
     return sendSuccess(res, 200, "Login successful", {
       accessToken,
-      profile: { isNew: false, isComplete: user.profileComplete },
+      user,
     });
   } catch (error) {
     logger.error(`Login failed for email ${req.body.email}: ${error.message}`);
@@ -60,32 +69,46 @@ export const loginController = async (req, res) => {
   }
 };
 
+/**
+ * Logout (Single Session)
+ */
 export const logoutController = async (req, res) => {
   logger.info(`User logout: ${req.user?.id}`);
+
   res.clearCookie("refreshToken");
+
   return sendSuccess(res, 200, "Logged out successfully");
 };
 
+/**
+ * Logout All (Future Enhancement Placeholder)
+ */
 export const logoutAllController = async (req, res) => {
   logger.info(`User logout all sessions: ${req.user?.id}`);
+
   res.clearCookie("refreshToken");
+
   return sendSuccess(res, 200, "Logged out from all sessions successfully");
 };
 
+/**
+ * Refresh Token
+ */
 export const refreshController = async (req, res) => {
   logger.info("Token refresh attempt");
+
   try {
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
     if (!refreshToken) {
-      logger.warn("Refresh attempt without token");
       return sendError(res, 400, "Refresh token is required");
     }
 
-    const { accessToken } = await refreshService(refreshToken);
+    const { accessToken, user } = await refreshService(refreshToken);
 
-    logger.info("Token refreshed successfully");
     return sendSuccess(res, 200, "Token refreshed successfully", {
       accessToken,
+      user,
     });
   } catch (error) {
     logger.error(`Token refresh failed: ${error.message}`);
@@ -93,57 +116,78 @@ export const refreshController = async (req, res) => {
   }
 };
 
+/**
+ * Validate Token
+ */
 export const validateTokenController = async (req, res) => {
   return sendSuccess(res, 200, "Token is valid", {
-    profile: { isComplete: !!req.user?.profileComplete },
+    user: {
+      id: req.user._id,
+      profileComplete: req.user.profileComplete,
+      isOnboarded: req.user.isOnboarded,
+    },
   });
 };
 
+/**
+ * Google Login
+ */
 export const googleLoginController = async (req, res) => {
   try {
     const { idToken } = req.body;
-    const { user, accessToken, refreshToken, profile } =
+
+    const { accessToken, refreshToken, user } =
       await loginWithGoogleService(idToken);
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
     });
+
     return sendSuccess(res, 200, "Login successful", {
       accessToken,
-      profile,
+      user,
     });
   } catch (error) {
     return sendError(res, 401, error.message || "Google login failed");
   }
 };
 
+/**
+ * Send OTP
+ */
 export const sendOtpController = async (req, res) => {
   try {
     const { phoneNumber } = req.body;
+
     const result = await sendOtpService(phoneNumber);
-    return sendSuccess(res, 200, "OTP sent", {
-      sent: result.sent,
-      code: result.code,
-    });
+
+    return sendSuccess(res, 200, "OTP sent", result);
   } catch (error) {
     return sendError(res, 400, error.message || "Failed to send OTP");
   }
 };
 
+/**
+ * Verify OTP (Phone Login)
+ */
 export const verifyOtpController = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
-    const { user, accessToken, refreshToken, profile } = await verifyOtpService(
+
+    const { accessToken, refreshToken, user } = await verifyOtpService(
       phoneNumber,
       otp,
     );
+
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       maxAge: ms(config.refreshTokenExpires),
     });
+
     return sendSuccess(res, 200, "Login successful", {
       accessToken,
-      profile,
+      user,
     });
   } catch (error) {
     return sendError(res, 401, error.message || "OTP verification failed");

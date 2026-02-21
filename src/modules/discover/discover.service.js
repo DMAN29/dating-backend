@@ -8,8 +8,8 @@ export const discoverService = async (userId, page = 1, limit = 10) => {
     throw new Error("User not found");
   }
 
-  if (!currentUser.profileComplete) {
-    throw new Error("Complete your profile to start discovering users");
+  if (!currentUser.isOnboarded) {
+    throw new Error("Complete onboarding to start discovering users");
   }
 
   return await getDiscoverUsers(currentUser, page, limit);

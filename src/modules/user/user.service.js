@@ -26,7 +26,6 @@ export const getProfileService = async (userId) => {
 };
 
 export const updateProfileService = async (userId, updateData) => {
-  logger.info(`Service:updateProfile userId=${userId}`);
   const user = await updateById(userId, updateData);
   if (!user) {
     throw new Error("User not found");

@@ -12,14 +12,20 @@ import {
 
 const userSchema = new mongoose.Schema(
   {
+    /* =========================
+       BASIC PROFILE
+    ========================= */
+
     firstName: {
       type: String,
       trim: true,
     },
+
     lastName: {
       type: String,
       trim: true,
     },
+
     email: {
       type: String,
       unique: true,
@@ -27,6 +33,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+
     password: {
       type: String,
       required: function () {
@@ -35,35 +42,36 @@ const userSchema = new mongoose.Schema(
       minlength: [5, "Password must be at least 5 characters"],
       select: false,
     },
+
     phoneNumber: {
       type: String,
       trim: true,
-      index: true,
       unique: true,
       sparse: true,
+      index: true,
     },
-    role: {
-      type: String,
-      enum: Object.values(USER_ROLES),
-      default: USER_ROLES.USER,
-    },
+
     gender: {
       type: String,
       enum: Object.values(GENDERS),
     },
+
     dateOfBirth: {
       type: Date,
     },
+
     bio: {
       type: String,
       trim: true,
       maxlength: [500, "Bio cannot exceed 500 characters"],
     },
-    profilePhotos: [
-      {
-        type: String,
-      },
-    ],
+
+    profilePhotos: [{ type: String }],
+
+    /* =========================
+       LOCATION
+    ========================= */
+
     location: {
       city: { type: String },
       country: { type: String },
@@ -75,10 +83,15 @@ const userSchema = new mongoose.Schema(
         },
         coordinates: {
           type: [Number],
-          default: [0, 0],
+          default: [0, 0], // [0,0] means not set
         },
       },
     },
+
+    /* =========================
+       PREFERENCES
+    ========================= */
+
     preference: {
       interestedIn: {
         type: String,
@@ -94,21 +107,48 @@ const userSchema = new mongoose.Schema(
         default: 50,
       },
     },
+
+    /* =========================
+       AUTH & ROLE
+    ========================= */
+
     authProvider: {
       type: String,
       enum: Object.values(AUTH_PROVIDERS),
       default: AUTH_PROVIDERS.EMAIL,
     },
+
     googleId: {
       type: String,
-      index: true,
       unique: true,
       sparse: true,
+      index: true,
     },
+
+    role: {
+      type: String,
+      enum: Object.values(USER_ROLES),
+      default: USER_ROLES.USER,
+    },
+
+    /* =========================
+       COMPLETION FLAGS
+    ========================= */
+
     profileComplete: {
       type: Boolean,
       default: false,
     },
+
+    isOnboarded: {
+      type: Boolean,
+      default: false,
+    },
+
+    /* =========================
+       ACCOUNT STATUS
+    ========================= */
+
     status: {
       isVerified: {
         type: Boolean,
@@ -129,10 +169,12 @@ const userSchema = new mongoose.Schema(
         default: ACCOUNT_STATUS.ACTIVE,
       },
     },
+
     isDeleted: {
       type: Boolean,
       default: false,
     },
+
     lastActive: {
       type: Date,
       default: Date.now,
@@ -143,10 +185,16 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-// Indexes
+/* =========================
+   INDEXES
+========================= */
+
 userSchema.index({ "location.coordinates": "2dsphere" });
 
-// Hash password before saving
+/* =========================
+   PASSWORD HASHING
+========================= */
+
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -155,23 +203,61 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Instance method to compare password
+/* =========================
+   PASSWORD COMPARISON
+========================= */
+
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
+/* =========================
+   PROFILE COMPLETION CHECK
+========================= */
+
 userSchema.methods.checkProfileComplete = function () {
-  const requiredFields = [
-    this.firstName,
-    this.lastName,
-    this.gender,
-    this.dateOfBirth,
-  ];
-  return requiredFields.every((v) => !!v);
+  return Boolean(
+    this.firstName && this.lastName && this.gender && this.dateOfBirth,
+  );
 };
+
+/* =========================
+   FULL ONBOARDING CHECK
+========================= */
+
+userSchema.methods.checkOnboardingComplete = function () {
+  const hasBasics = this.checkProfileComplete();
+
+  const hasBio = Boolean(this.bio?.trim());
+
+  const hasPhotos =
+    Array.isArray(this.profilePhotos) && this.profilePhotos.length > 0;
+
+  const coords = this.location?.coordinates?.coordinates;
+
+  const hasValidCoordinates =
+    Array.isArray(coords) &&
+    coords.length === 2 &&
+    !(coords[0] === 0 && coords[1] === 0);
+
+  // 🔥 Dynamic contact requirement
+  const hasContactInfo =
+    this.authProvider === AUTH_PROVIDERS.PHONE
+      ? Boolean(this.phoneNumber)
+      : Boolean(this.email);
+
+  return (
+    hasBasics && hasBio && hasPhotos && hasValidCoordinates && hasContactInfo
+  );
+};
+
+/* =========================
+   AUTO UPDATE FLAGS
+========================= */
 
 userSchema.pre("save", function (next) {
   this.profileComplete = this.checkProfileComplete();
+  this.isOnboarded = this.checkOnboardingComplete();
   next();
 });
 

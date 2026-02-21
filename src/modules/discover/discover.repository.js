@@ -58,7 +58,12 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   };
 
   // ======================================================
-  // 🔹 4️⃣ Age Filter
+  // 🔹 4️⃣ City Filter (if current user has a city)
+  if (currentUser.location?.city) {
+    query["location.city"] = currentUser.location.city;
+  }
+
+  // 🔹 5️⃣ Age Filter
   // ======================================================
 
   if (ageRange) {
@@ -83,7 +88,7 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   }
 
   // ======================================================
-  // 🔹 5️⃣ Geo Filter
+  // 🔹 6️⃣ Geo / Distance Filter
   // ======================================================
 
   if (
@@ -109,7 +114,7 @@ export const getDiscoverUsers = async (currentUser, page = 1, limit = 10) => {
   }
 
   // ======================================================
-  // 🔹 6️⃣ Pagination
+  // 🔹 7️⃣ Pagination
   // ======================================================
 
   return paginate({

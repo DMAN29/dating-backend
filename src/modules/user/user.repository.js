@@ -21,34 +21,47 @@ export const create = async (userData) => {
   return await User.create(userData);
 };
 
+/**
+ * IMPORTANT:
+ * Use save() instead of findByIdAndUpdate
+ * So pre("save") middleware runs
+ */
 export const updateById = async (id, updateData) => {
-  return await User.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  const user = await User.findById(id);
+  if (!user) return null;
+
+  Object.assign(user, updateData);
+
+  await user.save(); // triggers pre("save")
+
+  return user;
 };
 
 export const deleteById = async (id) => {
   const user = await User.findById(id);
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
   if (user.role === USER_ROLES.ADMIN) {
     throw new Error("Admin cannot be deleted");
   }
+
   const timestamp = Date.now();
-  const updateData = {
-    isDeleted: true,
-    "status.isBlocked": true,
-    "status.state": ACCOUNT_STATUS.INACTIVE,
-  };
+
+  user.isDeleted = true;
+  user.status.isBlocked = true;
+  user.status.state = ACCOUNT_STATUS.INACTIVE;
+
   if (user.email) {
-    updateData.email = `deleted_${timestamp}_${user.email}`;
+    user.email = `deleted_${timestamp}_${user.email}`;
   }
+
   if (user.phoneNumber) {
-    updateData.phoneNumber = `deleted_${timestamp}_${user.phoneNumber}`;
+    user.phoneNumber = `deleted_${timestamp}_${user.phoneNumber}`;
   }
-  return await User.findByIdAndUpdate(id, updateData, { new: true });
+
+  await user.save();
+
+  return user;
 };
 
 export const findAllPaginated = async (page = 1, limit = 10, filters = {}) => {
@@ -95,22 +108,16 @@ export const findAllPaginated = async (page = 1, limit = 10, filters = {}) => {
   const now = new Date();
   const dobFilter = {};
 
-  if (minAge !== undefined && minAge !== null && minAge !== "") {
-    const minAgeNum = Number(minAge);
-    if (!Number.isNaN(minAgeNum)) {
-      const dobMax = new Date(now);
-      dobMax.setFullYear(dobMax.getFullYear() - minAgeNum);
-      dobFilter.$lte = dobMax;
-    }
+  if (minAge) {
+    const dobMax = new Date(now);
+    dobMax.setFullYear(dobMax.getFullYear() - Number(minAge));
+    dobFilter.$lte = dobMax;
   }
 
-  if (maxAge !== undefined && maxAge !== null && maxAge !== "") {
-    const maxAgeNum = Number(maxAge);
-    if (!Number.isNaN(maxAgeNum)) {
-      const dobMin = new Date(now);
-      dobMin.setFullYear(dobMin.getFullYear() - maxAgeNum);
-      dobFilter.$gte = dobMin;
-    }
+  if (maxAge) {
+    const dobMin = new Date(now);
+    dobMin.setFullYear(dobMin.getFullYear() - Number(maxAge));
+    dobFilter.$gte = dobMin;
   }
 
   if (Object.keys(dobFilter).length > 0) {
@@ -121,16 +128,18 @@ export const findAllPaginated = async (page = 1, limit = 10, filters = {}) => {
     model: User,
     filter,
     projection:
-      "firstName lastName email gender dateOfBirth phoneNumber role status location status preference",
+      "firstName lastName email gender dateOfBirth phoneNumber role status location preference",
     page,
     limit,
   });
 };
 
 export const setBlockedById = async (id, isBlocked) => {
-  return await User.findByIdAndUpdate(
-    id,
-    { "status.isBlocked": isBlocked },
-    { new: true },
-  );
+  const user = await User.findById(id);
+  if (!user) return null;
+
+  user.status.isBlocked = isBlocked;
+  await user.save();
+
+  return user;
 };
