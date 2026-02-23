@@ -5,6 +5,8 @@ import {
   findByGoogleId,
   upsertUserByEmail,
   upsertUserByPhone,
+  findByEmail,
+  findByPhone,
 } from "./auth.repository.js";
 
 import {
@@ -36,39 +38,76 @@ const buildAuthResponse = (user) => {
   };
 };
 
-/**
- * Email Signup
- */
-export const registerService = async (userData) => {
-  logger.info("Service:register");
+// /**
+//  * Email Signup
+//  */
+// export const registerService = async (userData) => {
+//   logger.info("Service:register");
 
-  const existingUser = await findByEmailWithPassword(userData.email);
-  if (existingUser) {
-    throw new Error("User already exists with this email");
+//   const existingUser = await findByEmailWithPassword(userData.email);
+//   if (existingUser) {
+//     throw new Error("User already exists with this email");
+//   }
+
+//   const user = await createUser({
+//     email: userData.email,
+//     password: userData.password,
+//     authProvider: AUTH_PROVIDERS.EMAIL,
+//     profileComplete: false,
+//     isOnboarded: false,
+//   });
+
+//   return buildAuthResponse(user);
+// };
+
+// /**
+//  * Email Login
+//  */
+// export const loginService = async (email, password) => {
+//   logger.info("Service:login");
+
+//   const user = await findByEmailWithPassword(email);
+//   if (!user || !(await user.comparePassword(password))) {
+//     throw new Error("Invalid email or password");
+//   }
+
+//   return buildAuthResponse(user);
+// };
+
+export const authWithEmailService = async (email, password) => {
+  logger.info("Service:authWithEmail");
+
+  // Normalize email
+  email = email.toLowerCase();
+
+  let user = await findByEmailWithPassword(email);
+
+  // If user exists
+  if (user) {
+    // Prevent Google/Phone users from logging in with password
+    if (user.authProvider !== AUTH_PROVIDERS.EMAIL) {
+      throw new Error(`Please login using ${user.authProvider}`);
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      throw new Error("Invalid email or password");
+    }
+
+    return buildAuthResponse(user);
   }
 
-  const user = await createUser({
-    ...userData,
+  // Create new user
+  user = await createUser({
+    email,
+    password,
     authProvider: AUTH_PROVIDERS.EMAIL,
+    isOnboarded: false,
+    profileComplete: false,
   });
 
   return buildAuthResponse(user);
 };
-
-/**
- * Email Login
- */
-export const loginService = async (email, password) => {
-  logger.info("Service:login");
-
-  const user = await findByEmailWithPassword(email);
-  if (!user || !(await user.comparePassword(password))) {
-    throw new Error("Invalid email or password");
-  }
-
-  return buildAuthResponse(user);
-};
-
 /**
  * Refresh Token
  */
@@ -115,21 +154,28 @@ export const loginWithGoogleService = async (idToken) => {
 
   const googleId = payload.sub;
   const email = payload.email.toLowerCase();
-  const name = payload.name || "";
 
-  const [firstName, ...rest] = name.split(" ");
-  const lastName = rest.join(" ").trim() || undefined;
-
+  // 1️⃣ Check if already linked by googleId
   let user = await findByGoogleId(googleId);
 
   if (!user) {
-    user = await upsertUserByEmail(email, {
-      email,
-      googleId,
-      firstName,
-      lastName,
-      authProvider: AUTH_PROVIDERS.GOOGLE,
-    });
+    // 2️⃣ Check if user exists with same email
+    user = await findByEmail(email);
+
+    if (user) {
+      // Link Google to existing account
+      user.googleId = googleId;
+      await user.save();
+    } else {
+      // 3️⃣ Create minimal user (no profile data)
+      user = await upsertUserByEmail(email, {
+        email,
+        googleId,
+        authProvider: AUTH_PROVIDERS.GOOGLE,
+        isOnboarded: false,
+        profileComplete: false,
+      });
+    }
   }
 
   return buildAuthResponse(user);
@@ -163,10 +209,18 @@ export const verifyOtpService = async (phoneNumber, otp) => {
     throw new Error(result.message);
   }
 
-  const user = await upsertUserByPhone(phoneNumber, {
-    phoneNumber,
-    authProvider: AUTH_PROVIDERS.PHONE,
-  });
+  // 1️⃣ Check if user already exists
+  let user = await findByPhone(phoneNumber);
+
+  if (!user) {
+    // 2️⃣ Create minimal user only if not exists
+    user = await upsertUserByPhone(phoneNumber, {
+      phoneNumber,
+      authProvider: AUTH_PROVIDERS.PHONE,
+      isOnboarded: false,
+      profileComplete: false,
+    });
+  }
 
   return buildAuthResponse(user);
 };

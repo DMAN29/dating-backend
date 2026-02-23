@@ -1,18 +1,19 @@
 import express from "express";
 import {
-  loginController,
+  // loginController,
   logoutController,
   logoutAllController,
   refreshController,
-  signupController,
+  // signupController,
   validateTokenController,
   googleLoginController,
   sendOtpController,
   verifyOtpController,
+  emailAuthController,
 } from "./auth.controller.js";
 import { protect } from "../../shared/middleware/auth.middleware.js";
 import {
-  signupValidation,
+  // signupValidation,
   loginValidation,
   googleLoginValidation,
   sendOtpValidation,
@@ -21,13 +22,15 @@ import {
 
 const router = express.Router();
 
-router.post("/signup", signupValidation, signupController);
+// router.post("/signup", signupValidation, signupController);
 
-router.post("/login", loginValidation, loginController);
+// router.post("/login", loginValidation, loginController);
+
+router.post("/email", loginValidation, emailAuthController);
 
 router.post("/refresh", refreshController);
 
-router.post("/logout", logoutController);
+router.post("/logout", protect, logoutController);
 
 router.get("/validate", protect, validateTokenController);
 

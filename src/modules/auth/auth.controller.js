@@ -1,10 +1,11 @@
 import {
-  registerService,
-  loginService,
+  // registerService,
+  // loginService,
   refreshService,
   loginWithGoogleService,
   sendOtpService,
   verifyOtpService,
+  authWithEmailService,
 } from "./auth.service.js";
 
 import {
@@ -16,40 +17,66 @@ import { config } from "../../config/env.js";
 import ms from "ms";
 import logger from "../../shared/utils/logger.js";
 
-/**
- * Email Signup
- */
-export const signupController = async (req, res) => {
-  logger.info(`Auth signup attempt for email: ${req.body.email}`);
+// /**
+//  * Email Signup
+//  */
+// export const signupController = async (req, res) => {
+//   logger.info(`Auth signup attempt for email: ${req.body.email}`);
 
-  try {
-    const { accessToken, refreshToken, user } = await registerService(req.body);
+//   try {
+//     const { accessToken, refreshToken, user } = await registerService(req.body);
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      maxAge: ms(config.refreshTokenExpires),
-    });
+//     res.cookie("refreshToken", refreshToken, {
+//       httpOnly: true,
+//       maxAge: ms(config.refreshTokenExpires),
+//     });
 
-    return sendSuccess(res, 201, "User registered successfully", {
-      accessToken,
-      user,
-    });
-  } catch (error) {
-    logger.error(`Signup failed: ${error.message}`);
-    return sendError(res, 400, error.message || "Registration failed");
-  }
-};
+//     return sendSuccess(res, 201, "User registered successfully", {
+//       accessToken,
+//       user,
+//     });
+//   } catch (error) {
+//     logger.error(`Signup failed: ${error.message}`);
+//     return sendError(res, 400, error.message || "Registration failed");
+//   }
+// };
 
-/**
- * Email Login
- */
-export const loginController = async (req, res) => {
-  logger.info(`Auth login attempt for email: ${req.body.email}`);
+// /**
+//  * Email Login
+//  */
+// export const loginController = async (req, res) => {
+//   logger.info(`Auth login attempt for email: ${req.body.email}`);
+
+//   try {
+//     const { email, password } = req.body;
+
+//     const { accessToken, refreshToken, user } = await loginService(
+//       email,
+//       password,
+//     );
+
+//     res.cookie("refreshToken", refreshToken, {
+//       httpOnly: true,
+//       maxAge: ms(config.refreshTokenExpires),
+//     });
+
+//     return sendSuccess(res, 200, "Login successful", {
+//       accessToken,
+//       user,
+//     });
+//   } catch (error) {
+//     logger.error(`Login failed for email ${req.body.email}: ${error.message}`);
+//     return sendError(res, 401, error.message || "Login failed");
+//   }
+// };
+
+export const emailAuthController = async (req, res) => {
+  logger.info(`Auth email attempt for email: ${req.body.email}`);
 
   try {
     const { email, password } = req.body;
 
-    const { accessToken, refreshToken, user } = await loginService(
+    const { accessToken, refreshToken, user } = await authWithEmailService(
       email,
       password,
     );
@@ -59,13 +86,13 @@ export const loginController = async (req, res) => {
       maxAge: ms(config.refreshTokenExpires),
     });
 
-    return sendSuccess(res, 200, "Login successful", {
+    return sendSuccess(res, 200, "Authenticated successfully", {
       accessToken,
       user,
     });
   } catch (error) {
-    logger.error(`Login failed for email ${req.body.email}: ${error.message}`);
-    return sendError(res, 401, error.message || "Login failed");
+    logger.error(`Email auth failed: ${error.message}`);
+    return sendError(res, 401, error.message);
   }
 };
 

@@ -17,24 +17,24 @@ export const validate = (req, res, next) => {
 /**
  * Signup Validation Rules
  */
-export const signupValidation = [
-  body("email")
-    .isEmail()
-    .withMessage("Please provide a valid email address")
-    .normalizeEmail(),
-  body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
-  body("firstName").trim().notEmpty().withMessage("First name is required"),
-  body("lastName").trim().notEmpty().withMessage("Last name is required"),
-  body("gender")
-    .isIn(Object.values(GENDERS))
-    .withMessage(`Gender must be one of: ${Object.values(GENDERS).join(", ")}`),
-  body("dateOfBirth")
-    .isISO8601()
-    .withMessage("Please provide a valid date of birth (YYYY-MM-DD)"),
-  validate,
-];
+// export const signupValidation = [
+//   body("email")
+//     .isEmail()
+//     .withMessage("Please provide a valid email address")
+//     .normalizeEmail(),
+//   body("password")
+//     .isLength({ min: 6 })
+//     .withMessage("Password must be at least 6 characters long"),
+//   body("firstName").trim().notEmpty().withMessage("First name is required"),
+//   body("lastName").trim().notEmpty().withMessage("Last name is required"),
+//   body("gender")
+//     .isIn(Object.values(GENDERS))
+//     .withMessage(`Gender must be one of: ${Object.values(GENDERS).join(", ")}`),
+//   body("dateOfBirth")
+//     .isISO8601()
+//     .withMessage("Please provide a valid date of birth (YYYY-MM-DD)"),
+//   validate,
+// ];
 
 export const loginValidation = [
   body("email").isEmail().withMessage("Please provide a valid email address"),
