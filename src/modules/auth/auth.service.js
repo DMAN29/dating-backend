@@ -38,41 +38,9 @@ const buildAuthResponse = (user) => {
   };
 };
 
-// /**
-//  * Email Signup
-//  */
-// export const registerService = async (userData) => {
-//   logger.info("Service:register");
-
-//   const existingUser = await findByEmailWithPassword(userData.email);
-//   if (existingUser) {
-//     throw new Error("User already exists with this email");
-//   }
-
-//   const user = await createUser({
-//     email: userData.email,
-//     password: userData.password,
-//     authProvider: AUTH_PROVIDERS.EMAIL,
-//     profileComplete: false,
-//     isOnboarded: false,
-//   });
-
-//   return buildAuthResponse(user);
-// };
-
-// /**
-//  * Email Login
-//  */
-// export const loginService = async (email, password) => {
-//   logger.info("Service:login");
-
-//   const user = await findByEmailWithPassword(email);
-//   if (!user || !(await user.comparePassword(password))) {
-//     throw new Error("Invalid email or password");
-//   }
-
-//   return buildAuthResponse(user);
-// };
+/**
+ * Login with email
+ */
 
 export const authWithEmailService = async (email, password) => {
   logger.info("Service:authWithEmail");

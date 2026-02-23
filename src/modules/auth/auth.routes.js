@@ -22,10 +22,6 @@ import {
 
 const router = express.Router();
 
-// router.post("/signup", signupValidation, signupController);
-
-// router.post("/login", loginValidation, loginController);
-
 router.post("/email", loginValidation, emailAuthController);
 
 router.post("/refresh", refreshController);
