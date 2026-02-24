@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import socketAuth from "./socket.auth.js";
 import logger from "../shared/utils/logger.js";
+import registerChatSocket from "../modules/chat/chat.socket.js";
 
 let io;
 
@@ -18,12 +19,9 @@ export const initSocket = (server) => {
   io.on("connection", (socket) => {
     const userId = socket.user.id || socket.user._id || socket.user.userId;
 
-    logger.info(`User ${userId} connected via socket ${socket.id}`);
+    logger.info(`User ${userId} connected`);
 
-    // Basic connection confirmation
-    socket.emit("connected", {
-      message: "Socket connected successfully",
-    });
+    registerChatSocket(io, socket);
 
     socket.on("disconnect", () => {
       logger.info(`User ${userId} disconnected`);

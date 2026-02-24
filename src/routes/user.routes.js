@@ -3,6 +3,7 @@ import userRoutes from "../modules/user/user.routes.js";
 import swipeRoutes from "../modules/swipe/swipe.routes.js";
 import matchRoutes from "../modules/match/match.routes.js";
 import discoverRoutes from "../modules/discover/discover.routes.js";
+import chatRoutes from "../modules/chat/chat.routes.js";
 
 import { protect } from "../shared/middleware/auth.middleware.js";
 import { requireOnboarding } from "../shared/middleware/onboarding.middleware.js";
@@ -19,5 +20,6 @@ router.use("/profile", userRoutes);
 router.use("/swipes", requireOnboarding, swipeRoutes);
 router.use("/matches", requireOnboarding, matchRoutes);
 router.use("/discover", requireOnboarding, discoverRoutes);
+router.use("/chat", requireOnboarding, chatRoutes);
 
 export default router;
