@@ -1,3 +1,4 @@
+import Match from "../match/match.model.js";
 import Conversation from "./conversation.model.js";
 import Message from "./message.model.js";
 
@@ -19,6 +20,11 @@ export const findUserConversations = async (userId) => {
 // Get conversation by ID
 export const findConversationById = async (conversationId) => {
   return Conversation.findById(conversationId);
+};
+
+
+export const findMatchById = async (matchId) => {
+  return Match.findById(matchId);
 };
 
 // Create conversation (called after match)

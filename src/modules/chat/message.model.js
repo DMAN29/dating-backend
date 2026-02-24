@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
-    conversationId: {
+    matchId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Conversation",
+      ref: "Match",
       required: true,
       index: true,
     },
@@ -59,11 +59,11 @@ const messageSchema = new mongoose.Schema(
 ============================== */
 
 // Fast pagination
-messageSchema.index({ conversationId: 1, createdAt: -1 });
+messageSchema.index({ matchId: 1, createdAt: -1 });
 
 // Fast unread count
 messageSchema.index({
-  conversationId: 1,
+  matchId: 1,
   receiver: 1,
   status: 1,
 });

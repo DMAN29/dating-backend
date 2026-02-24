@@ -5,9 +5,11 @@ import {
   markMessagesDelivered,
   markMessagesSeen,
   countUnreadMessages,
+  findMatchById,
 } from "./chat.repository.js";
 
 import { cacheMessage } from "./chat.redis.service.js";
+import messageModel from "./message.model.js";
 
 /* ==============================
    GET USER CONVERSATIONS
@@ -27,15 +29,15 @@ export const getConversationsService = async (userId) => {
 
 export const getMessagesService = async (
   userId,
-  conversationId,
+  matchId,
   page,
   limit,
 ) => {
-  if (!conversationId) {
+  if (!matchId) {
     throw new Error("Conversation not found");
   }
 
-  const conversation = await findConversationById(conversationId);
+  const conversation = await findConversationById(matchId);
 
   if (!conversation) {
     throw new Error("Conversation not found");
@@ -49,7 +51,7 @@ export const getMessagesService = async (
     throw new Error("Unauthorized");
   }
 
-  return findMessages(conversationId, page, limit);
+  return findMessages(matchId, page, limit);
 };
 
 /* ==============================
@@ -58,38 +60,38 @@ export const getMessagesService = async (
 
 export const sendMessageService = async ({
   senderId,
-  conversationId,
+  matchId,
   text,
   type = "text",
 }) => {
-  if (!conversationId || !senderId) {
-    throw new Error("Invalid request");
+  if (!matchId || !senderId) {
+    throw new Error("senderId or matchId is missing");
   }
 
   if (!text && type === "text") {
     throw new Error("Message cannot be empty");
   }
 
-  const conversation = await findConversationById(conversationId);
+  const conversation = await findMatchById(matchId);
 
   if (!conversation) {
     throw new Error("Conversation not found");
   }
 
-  const isParticipant = conversation.participants.some(
+  const isParticipant = conversation.users.some(
     (p) => p.toString() === senderId.toString(),
   );
 
   if (!isParticipant) {
-    throw new Error("Unauthorized");
+    throw new Error("Unauthorized Participant");
   }
 
-  const receiverId = conversation.participants.find(
+  const receiverId = conversation.users.find(
     (p) => p.toString() !== senderId.toString(),
   );
 
   const message = {
-    conversationId,
+    matchId,
     sender: senderId,
     receiver: receiverId,
     text,
@@ -98,7 +100,9 @@ export const sendMessageService = async ({
     createdAt: new Date(),
   };
 
-  await cacheMessage(conversationId, message);
+  (async function (){
+    await messageModel.create(message);
+  })();
 
   return message;
 };
@@ -107,34 +111,34 @@ export const sendMessageService = async ({
    MARK DELIVERED
 ============================== */
 
-export const markDeliveredService = async (conversationId, userId) => {
-  if (!conversationId || !userId) {
+export const markDeliveredService = async (matchId, userId) => {
+  if (!matchId || !userId) {
     throw new Error("Invalid request");
   }
 
-  return markMessagesDelivered(conversationId, userId);
+  return markMessagesDelivered(matchId, userId);
 };
 
 /* ==============================
    MARK SEEN
 ============================== */
 
-export const markSeenService = async (conversationId, userId) => {
-  if (!conversationId || !userId) {
+export const markSeenService = async (matchId, userId) => {
+  if (!matchId || !userId) {
     throw new Error("Invalid request");
   }
 
-  return markMessagesSeen(conversationId, userId);
+  return markMessagesSeen(matchId, userId);
 };
 
 /* ==============================
    UNREAD COUNT
 ============================== */
 
-export const getUnreadCountService = async (conversationId, userId) => {
-  if (!conversationId || !userId) {
+export const getUnreadCountService = async (matchId, userId) => {
+  if (!matchId || !userId) {
     throw new Error("Invalid request");
   }
 
-  return countUnreadMessages(conversationId, userId);
+  return countUnreadMessages(matchId, userId);
 };

@@ -16,9 +16,9 @@ const registerChatSocket = (io, socket) => {
 
   socket.on("send_message", async (data) => {
     try {
-      const { conversationId, text, type } = data;
+      const { matchId, text, type } = data;
 
-      if (!conversationId) {
+      if (!matchId) {
         return socket.emit("message_error", {
           message: "Invalid conversation",
         });
@@ -26,31 +26,21 @@ const registerChatSocket = (io, socket) => {
 
       const message = await sendMessageService({
         senderId,
-        conversationId,
+        matchId,
         text,
         type,
       });
 
-      // Fetch once to determine receiver
-      const conversation = await findConversationById(conversationId);
 
-      if (!conversation) {
-        return socket.emit("message_error", {
-          message: "Conversation not found",
-        });
-      }
-
-      const receiverId = conversation.participants.find(
-        (p) => p.toString() !== senderId.toString(),
-      );
+      const {sender,receiver,status,createdAt} = message;
 
       // Emit to receiver
-      io.to(receiverId.toString()).emit("receive_message", message);
+      io.to(receiver.toString()).emit("receive_message", message);
 
       // Confirm to sender
-      socket.emit("message_sent", message);
+      //  socket.emit("message_sent", message);
 
-      logger.info(`Message sent from ${senderId} to ${receiverId}`);
+      logger.info(`Message sent from ${senderId} to ${receiver}`);
     } catch (error) {
       logger.error("Send message error:", error.message);
       socket.emit("message_error", {
@@ -63,14 +53,14 @@ const registerChatSocket = (io, socket) => {
      MESSAGE DELIVERED
   ============================== */
 
-  socket.on("message_delivered", async ({ conversationId }) => {
+  socket.on("message_delivered", async ({ matchId }) => {
     try {
-      if (!conversationId) return;
+      if (!matchId) return;
 
-      await markDeliveredService(conversationId, senderId);
+      await markDeliveredService(matchId, senderId);
 
       socket.emit("delivered_ack", {
-        conversationId,
+        matchId,
       });
     } catch (error) {
       logger.error("Delivered error:", error.message);
@@ -81,19 +71,19 @@ const registerChatSocket = (io, socket) => {
      MESSAGE SEEN
   ============================== */
 
-  socket.on("message_seen", async ({ conversationId }) => {
+  socket.on("message_seen", async ({ matchId }) => {
     try {
-      if (!conversationId) return;
+      if (!matchId) return;
 
-      await markSeenService(conversationId, senderId);
+      await markSeenService(matchId, senderId);
 
-      const conversation = await findConversationById(conversationId);
+      const conversation = await findConversationById(matchId);
 
       if (!conversation) return;
 
       conversation.participants.forEach((user) => {
         io.to(user.toString()).emit("seen_update", {
-          conversationId,
+          matchId,
           seenBy: senderId,
         });
       });
@@ -106,10 +96,10 @@ const registerChatSocket = (io, socket) => {
      TYPING START
   ============================== */
 
-  socket.on("typing_start", async ({ conversationId }) => {
-    if (!conversationId) return;
+  socket.on("typing_start", async ({ matchId }) => {
+    if (!matchId) return;
 
-    const conversation = await findConversationById(conversationId);
+    const conversation = await findConversationById(matchId);
     if (!conversation) return;
 
     const receiverId = conversation.participants.find(
@@ -125,10 +115,10 @@ const registerChatSocket = (io, socket) => {
      TYPING STOP
   ============================== */
 
-  socket.on("typing_stop", async ({ conversationId }) => {
-    if (!conversationId) return;
+  socket.on("typing_stop", async ({ matchId }) => {
+    if (!matchId) return;
 
-    const conversation = await findConversationById(conversationId);
+    const conversation = await findConversationById(matchId);
     if (!conversation) return;
 
     const receiverId = conversation.participants.find(
