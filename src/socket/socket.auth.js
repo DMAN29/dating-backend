@@ -20,7 +20,7 @@ const socketAuth = (socket, next) => {
 
     // Join personal room (multi-device support)
     const userId = decoded.id || decoded._id || decoded.userId;
-    socket.join(userId);
+    socket.join(String(userId));
 
     next();
   } catch (err) {

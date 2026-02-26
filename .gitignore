@@ -37,3 +37,7 @@ build/
 public/uploads/
 
 src/scripts/
+
+
+.vscode/
+.idea/

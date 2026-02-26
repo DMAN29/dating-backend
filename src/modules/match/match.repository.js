@@ -1,12 +1,16 @@
 import Match from "./match.model.js";
 import { paginate } from "../../shared/utils/pagination.js";
 
-export const createMatch = async (userA, userB) => {
-  const sortedUsers = [userA, userB].map((id) => id.toString()).sort();
+/* =========================
+   CREATE MATCH
+========================= */
 
-  return await Match.findOneAndUpdate(
-    { users: sortedUsers },
-    { users: sortedUsers },
+export const createMatch = async (userA, userB) => {
+  const [user1, user2] = [userA, userB].map((id) => id.toString()).sort();
+
+  return Match.findOneAndUpdate(
+    { user1, user2 },
+    { user1, user2 },
     {
       new: true,
       upsert: true,
@@ -15,34 +19,23 @@ export const createMatch = async (userA, userB) => {
   );
 };
 
-export const findMatchBetweenUsers = async (userA, userB) => {
-  const sortedUsers = [userA, userB].map((id) => id.toString()).sort();
+/* =========================
+   FIND MATCH BETWEEN USERS
+========================= */
 
-  return await Match.findOne({
-    users: sortedUsers,
+export const findMatchBetweenUsers = async (userA, userB) => {
+  const [user1, user2] = [userA, userB].map((id) => id.toString()).sort();
+
+  return Match.findOne({
+    user1,
+    user2,
     isDeleted: { $ne: true },
   });
 };
 
-export const findMatchesByUser = async (userId) => {
-  return await Match.find({
-    users: userId,
-    isDeleted: { $ne: true },
-  })
-    .populate("users", "firstName lastName profilePhotos bio")
-    .sort({ matchedAt: -1 });
-};
-
-export const findMatchedUserIds = async (userId) => {
-  const matches = await Match.find({
-    users: userId,
-    isDeleted: { $ne: true },
-  }).select("users");
-
-  return matches.flatMap((m) =>
-    m.users.filter((id) => id.toString() !== userId.toString()),
-  );
-};
+/* =========================
+   FIND MATCHES BY USER
+========================= */
 
 export const findMatchesByUserPaginated = async (
   userId,
@@ -52,34 +45,48 @@ export const findMatchesByUserPaginated = async (
   return paginate({
     model: Match,
     filter: {
-      users: userId,
+      $or: [{ user1: userId }, { user2: userId }],
       isDeleted: { $ne: true },
     },
     page,
     limit,
-    sort: { matchedAt: -1 },
-    populate: {
-      path: "users",
-      select: "firstName lastName profilePhotos bio",
-    },
+    sort: { updatedAt: -1 },
+    populate: [
+      {
+        path: "user1",
+        select: "firstName lastName profilePhotos bio",
+      },
+      {
+        path: "user2",
+        select: "firstName lastName profilePhotos bio",
+      },
+    ],
   });
 };
 
-export const softDeleteMatch = async (matchId) => {
-  return await Match.findByIdAndUpdate(
-    matchId,
-    { isDeleted: true },
-    { new: true },
-  );
-};
+/* =========================
+   FIND ACTIVE MATCH FOR USER
+========================= */
 
 export const findActiveMatchForUser = async (matchId, userId) => {
-  return await Match.findOne({
+  return Match.findOne({
     _id: matchId,
-    users: userId,
+    $or: [{ user1: userId }, { user2: userId }],
     isDeleted: { $ne: true },
   });
 };
+
+/* =========================
+   SOFT DELETE MATCH
+========================= */
+
+export const softDeleteMatch = async (matchId) => {
+  return Match.findByIdAndUpdate(matchId, { isDeleted: true }, { new: true });
+};
+
+/* =========================
+   ADMIN PAGINATED MATCHES
+========================= */
 
 export const findAllMatchesPaginated = async (page = 1, limit = 10) => {
   return paginate({
@@ -87,10 +94,31 @@ export const findAllMatchesPaginated = async (page = 1, limit = 10) => {
     filter: { isDeleted: { $ne: true } },
     page,
     limit,
-    sort: { matchedAt: -1 },
-    populate: {
-      path: "users",
-      select: "firstName lastName email gender",
-    },
+    sort: { updatedAt: -1 },
+    populate: [
+      {
+        path: "user1",
+        select: "firstName lastName email gender",
+      },
+      {
+        path: "user2",
+        select: "firstName lastName email gender",
+      },
+    ],
   });
+};
+
+/* =========================
+   FIND MATCHED USER IDS
+========================= */
+
+export const findMatchedUserIds = async (userId) => {
+  const matches = await Match.find({
+    $or: [{ user1: userId }, { user2: userId }],
+    isDeleted: { $ne: true },
+  }).select("user1 user2");
+
+  return matches.map((match) =>
+    match.user1.toString() === userId.toString() ? match.user2 : match.user1,
+  );
 };

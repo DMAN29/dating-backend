@@ -1,102 +1,57 @@
 import Match from "../match/match.model.js";
-import Conversation from "./conversation.model.js";
 import Message from "./message.model.js";
 
-/* ==============================
-   CONVERSATION QUERIES
-============================== */
-
-// Get all conversations for a user
-export const findUserConversations = async (userId) => {
-  return Conversation.find({
-    participants: userId,
-    isActive: true,
+export const findUserMatches = async (userId) => {
+  return Match.find({
+    $or: [{ user1: userId }, { user2: userId }],
+    isDeleted: { $ne: true },
   })
-    .populate("participants", "firstName lastName profilePhoto")
-    .populate("lastMessage")
-    .sort({ lastMessageAt: -1 });
+    .populate("user1", "firstName lastName profilePhotos")
+    .populate("user2", "firstName lastName profilePhotos")
+    .sort({ updatedAt: -1 });
 };
-
-// Get conversation by ID
-export const findConversationById = async (conversationId) => {
-  return Conversation.findById(conversationId);
-};
-
 
 export const findMatchById = async (matchId) => {
-  return Match.findById(matchId);
+  return Match.findOne({
+    _id: matchId,
+    isDeleted: { $ne: true },
+  });
 };
 
-// Create conversation (called after match)
-export const createConversation = async (data) => {
-  return Conversation.create(data);
+export const createMessage = async (data) => {
+  return Message.create(data);
 };
 
-// Update last message metadata
-export const updateLastMessage = async (conversationId, messageId) => {
-  return Conversation.findByIdAndUpdate(
-    conversationId,
-    {
-      lastMessage: messageId,
-      lastMessageAt: new Date(),
-    },
-    { new: true },
-  );
-};
-
-/* ==============================
-   MESSAGE QUERIES
-============================== */
-
-// Get paginated messages
-export const findMessages = async (conversationId, page = 1, limit = 20) => {
+export const findMessages = async (matchId, page, limit) => {
   const skip = (page - 1) * limit;
 
-  return Message.find({ conversationId })
+  return Message.find({ matchId })
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
 };
 
-// Bulk insert messages (for Redis flush)
-export const insertMessagesBulk = async (messages) => {
-  return Message.insertMany(messages);
-};
-
-// Mark messages as delivered
-export const markMessagesDelivered = async (conversationId, receiverId) => {
+export const markMessagesDelivered = async (matchId, userId) => {
   return Message.updateMany(
-    {
-      conversationId,
-      receiver: receiverId,
-      status: "sent",
-    },
-    {
-      status: "delivered",
-      deliveredAt: new Date(),
-    },
+    { matchId, receiver: userId, status: "sent" },
+    { status: "delivered", deliveredAt: new Date() },
   );
 };
 
-// Mark messages as seen
-export const markMessagesSeen = async (conversationId, receiverId) => {
+export const markMessagesSeen = async (matchId, userId) => {
   return Message.updateMany(
     {
-      conversationId,
-      receiver: receiverId,
+      matchId,
+      receiver: userId,
       status: { $in: ["sent", "delivered"] },
     },
-    {
-      status: "seen",
-      seenAt: new Date(),
-    },
+    { status: "seen", seenAt: new Date() },
   );
 };
 
-// Count unread messages
-export const countUnreadMessages = async (conversationId, userId) => {
+export const countUnreadMessages = async (matchId, userId) => {
   return Message.countDocuments({
-    conversationId,
+    matchId,
     receiver: userId,
     status: { $ne: "seen" },
   });

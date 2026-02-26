@@ -6,7 +6,7 @@ import { connectDB } from "./config/database.js";
 import { connectRedis } from "./config/redisClient.js";
 import { initSocket } from "./socket/socket.js";
 import logger from "./shared/utils/logger.js";
-import { startChatFlushWorker } from "./modules/chat/chat.flush.worker.js";
+// import { startChatFlushWorker } from "./modules/chat/chat.flush.worker.js";
 
 /* -------------------------
    CREATE HTTP SERVER
@@ -28,7 +28,7 @@ const start = async () => {
   await connectDB();
   await connectRedis();
 
-  startChatFlushWorker();
+  //   startChatFlushWorker();
 
   server.listen(config.port, () => {
     logger.info(`Server running on port ${config.port}`);

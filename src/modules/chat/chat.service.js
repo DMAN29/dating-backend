@@ -1,144 +1,82 @@
+import Match from "../match/match.model.js";
 import {
-  findUserConversations,
-  findConversationById,
+  findUserMatches,
+  findMatchById,
   findMessages,
+  createMessage,
   markMessagesDelivered,
   markMessagesSeen,
   countUnreadMessages,
-  findMatchById,
 } from "./chat.repository.js";
 
-import { cacheMessage } from "./chat.redis.service.js";
-import messageModel from "./message.model.js";
-
-/* ==============================
-   GET USER CONVERSATIONS
-============================== */
-
+/* GET CHAT LIST */
 export const getConversationsService = async (userId) => {
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return findUserConversations(userId);
+  if (!userId) throw new Error("Unauthorized");
+  return findUserMatches(userId);
 };
 
-/* ==============================
-   GET MESSAGES (PAGINATED)
-============================== */
+/* GET MESSAGES */
+export const getMessagesService = async (userId, matchId, page, limit) => {
+  const match = await findMatchById(matchId);
+  if (!match) throw new Error("Match not found");
 
-export const getMessagesService = async (
-  userId,
-  matchId,
-  page,
-  limit,
-) => {
-  if (!matchId) {
-    throw new Error("Conversation not found");
-  }
+  const isParticipant =
+    match.user1.toString() === userId.toString() ||
+    match.user2.toString() === userId.toString();
 
-  const conversation = await findConversationById(matchId);
-
-  if (!conversation) {
-    throw new Error("Conversation not found");
-  }
-
-  const isParticipant = conversation.participants.some(
-    (p) => p.toString() === userId.toString(),
-  );
-
-  if (!isParticipant) {
-    throw new Error("Unauthorized");
-  }
+  if (!isParticipant) throw new Error("Unauthorized");
 
   return findMessages(matchId, page, limit);
 };
 
-/* ==============================
-   SEND MESSAGE (Redis Buffer)
-============================== */
-
+/* SEND MESSAGE */
 export const sendMessageService = async ({
   senderId,
   matchId,
   text,
   type = "text",
 }) => {
-  if (!matchId || !senderId) {
-    throw new Error("senderId or matchId is missing");
-  }
+  if (!senderId || !matchId) throw new Error("Invalid request");
 
-  if (!text && type === "text") {
-    throw new Error("Message cannot be empty");
-  }
+  if (type === "text" && !text) throw new Error("Message cannot be empty");
 
-  const conversation = await findMatchById(matchId);
+  const match = await findMatchById(matchId);
+  if (!match) throw new Error("Match not found");
 
-  if (!conversation) {
-    throw new Error("Conversation not found");
-  }
+  const isParticipant =
+    match.user1.toString() === senderId.toString() ||
+    match.user2.toString() === senderId.toString();
 
-  const isParticipant = conversation.users.some(
-    (p) => p.toString() === senderId.toString(),
-  );
+  if (!isParticipant) throw new Error("Unauthorized participant");
 
-  if (!isParticipant) {
-    throw new Error("Unauthorized Participant");
-  }
+  const receiverId =
+    match.user1.toString() === senderId.toString() ? match.user2 : match.user1;
 
-  const receiverId = conversation.users.find(
-    (p) => p.toString() !== senderId.toString(),
-  );
-
-  const message = {
+  const message = await createMessage({
     matchId,
     sender: senderId,
     receiver: receiverId,
     text,
     type,
     status: "sent",
-    createdAt: new Date(),
-  };
+  });
 
-  (async function (){
-    await messageModel.create(message);
-  })();
+  // 🔥 Important: Update chat order
+  await Match.findByIdAndUpdate(matchId, {
+    updatedAt: new Date(),
+  });
 
   return message;
 };
 
-/* ==============================
-   MARK DELIVERED
-============================== */
-
 export const markDeliveredService = async (matchId, userId) => {
-  if (!matchId || !userId) {
-    throw new Error("Invalid request");
-  }
-
   return markMessagesDelivered(matchId, userId);
 };
 
-/* ==============================
-   MARK SEEN
-============================== */
-
 export const markSeenService = async (matchId, userId) => {
-  if (!matchId || !userId) {
-    throw new Error("Invalid request");
-  }
-
   return markMessagesSeen(matchId, userId);
 };
 
-/* ==============================
-   UNREAD COUNT
-============================== */
-
 export const getUnreadCountService = async (matchId, userId) => {
-  if (!matchId || !userId) {
-    throw new Error("Invalid request");
-  }
-
   return countUnreadMessages(matchId, userId);
 };

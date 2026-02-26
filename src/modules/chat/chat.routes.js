@@ -14,10 +14,10 @@ const router = express.Router();
 // GET /api/chat
 router.get("/", getConversationsController);
 
-// GET /api/chat/:conversationId/messages?page=1&limit=20
-router.get("/:conversationId/messages", getMessagesController);
+// GET /api/chat/:matchId/messages
+router.get("/:matchId/messages", getMessagesController);
 
-// GET /api/chat/:conversationId/unread-count
-router.get("/:conversationId/unread-count", getUnreadCountController);
+// GET /api/chat/:matchId/unread-count
+router.get("/:matchId/unread-count", getUnreadCountController);
 
 export default router;

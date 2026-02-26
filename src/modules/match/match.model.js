@@ -2,16 +2,15 @@ import mongoose from "mongoose";
 
 const matchSchema = new mongoose.Schema(
   {
-    users: {
-      type: [mongoose.Schema.Types.ObjectId],
+    user1: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      validate: {
-        validator: function (val) {
-          return val.length === 2;
-        },
-        message: "Match must contain exactly 2 users",
-      },
+    },
+    user2: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     matchedAt: {
       type: Date,
@@ -25,9 +24,11 @@ const matchSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Prevent duplicate match for same 2 users
-matchSchema.index({ users: 1 }, { unique: true });
+// Prevent duplicate pair
+matchSchema.index({ user1: 1, user2: 1 }, { unique: true });
 
-const Match = mongoose.model("Match", matchSchema);
+// Fast lookup
+matchSchema.index({ user1: 1 });
+matchSchema.index({ user2: 1 });
 
-export default Match;
+export default mongoose.model("Match", matchSchema);
