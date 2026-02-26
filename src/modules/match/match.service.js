@@ -6,6 +6,7 @@ import {
   findActiveMatchForUser,
   findAllMatchesPaginated,
   createMatch,
+  findAllBlockedMatchesPaginated,
 } from "./match.repository.js";
 
 export const createMatchService = async (userA, userB) => {
@@ -42,4 +43,36 @@ export const unmatchService = async (userId, matchId) => {
 
 export const getAllMatchesAdminService = async (page, limit) => {
   return await findAllMatchesPaginated(page, limit);
+};
+
+export const blockUserService = async (userId, matchId) => {
+  const match = await findActiveMatchForUser(matchId, userId);
+  if (!match) throw new Error("Match not found");
+
+  if (match.isBlocked) return match;
+
+  match.isBlocked = true;
+  match.blockedBy = userId;
+
+  return await match.save();
+};
+
+export const unblockUserService = async (userId, matchId) => {
+  const match = await findActiveMatchForUser(matchId, userId);
+  if (!match) throw new Error("Match not found");
+
+  if (!match.isBlocked) return match;
+
+  if (!match.blockedBy?.equals(userId)) {
+    throw new Error("Only blocker can unblock");
+  }
+
+  match.isBlocked = false;
+  match.blockedBy = null;
+
+  return await match.save();
+};
+
+export const getAllBlockedMatchesAdminService = async (page, limit) => {
+  return await findAllBlockedMatchesPaginated(page, limit);
 };

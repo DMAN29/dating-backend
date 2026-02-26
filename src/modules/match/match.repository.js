@@ -122,3 +122,30 @@ export const findMatchedUserIds = async (userId) => {
     match.user1.toString() === userId.toString() ? match.user2 : match.user1,
   );
 };
+
+export const findAllBlockedMatchesPaginated = async (page = 1, limit = 10) => {
+  return paginate({
+    model: Match,
+    filter: {
+      isBlocked: true,
+      isDeleted: { $ne: true },
+    },
+    page,
+    limit,
+    sort: { updatedAt: -1 },
+    populate: [
+      {
+        path: "user1",
+        select: "firstName lastName email gender",
+      },
+      {
+        path: "user2",
+        select: "firstName lastName email gender",
+      },
+      {
+        path: "blockedBy",
+        select: "firstName lastName email",
+      },
+    ],
+  });
+};

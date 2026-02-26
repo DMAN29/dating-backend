@@ -6,7 +6,9 @@ import {
 import { findMatchById } from "./chat.repository.js";
 
 const registerChatSocket = (io, socket) => {
-  const senderId = String(socket.user.id || socket.user._id || socket.user.userId);
+  const senderId = String(
+    socket.user.id || socket.user._id || socket.user.userId,
+  );
 
   socket.on("send_message", async (data) => {
     try {

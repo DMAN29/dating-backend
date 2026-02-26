@@ -20,6 +20,17 @@ const matchSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // ✅ NEW BLOCK FIELDS
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
+
+    blockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true },
 );
