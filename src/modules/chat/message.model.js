@@ -44,6 +44,11 @@ const messageSchema = new mongoose.Schema(
     deliveredAt: Date,
     seenAt: Date,
 
+    deliveryNotified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     deletedFor: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -55,7 +60,13 @@ const messageSchema = new mongoose.Schema(
 );
 
 // Performance indexes
+// Pagination
 messageSchema.index({ matchId: 1, createdAt: -1 });
-messageSchema.index({ matchId: 1, receiver: 1, status: 1 });
+
+// Delivery queries
+messageSchema.index({ receiver: 1, status: 1 });
+
+// Sync delivered queries
+messageSchema.index({ sender: 1, status: 1, deliveryNotified: 1 });
 
 export default mongoose.model("Message", messageSchema);

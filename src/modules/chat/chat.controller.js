@@ -33,8 +33,7 @@ export const getMessagesController = async (req, res, next) => {
     const userId = req.user.id || req.user._id;
     const { matchId } = req.params;
 
-    const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(50, Number(req.query.limit) || 20);
+    const { page = 1, limit = 10 } = req.query;
 
     const messages = await getMessagesService(userId, matchId, page, limit);
 

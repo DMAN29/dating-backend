@@ -23,9 +23,10 @@ import logger from "../../shared/utils/logger.js";
 
 const googleClient = new OAuth2Client();
 
-/**
- * Common function to build auth response
- */
+/* =====================================================
+   COMMON AUTH RESPONSE
+===================================================== */
+
 const buildAuthResponse = (user) => {
   return {
     accessToken: generateAccessToken(user._id),
@@ -38,21 +39,18 @@ const buildAuthResponse = (user) => {
   };
 };
 
-/**
- * Login with email
- */
+/* =====================================================
+   EMAIL LOGIN
+===================================================== */
 
 export const authWithEmailService = async (email, password) => {
   logger.info("Service:authWithEmail");
 
-  // Normalize email
   email = email.toLowerCase();
 
   let user = await findByEmailWithPassword(email);
 
-  // If user exists
   if (user) {
-    // Prevent Google/Phone users from logging in with password
     if (user.authProvider !== AUTH_PROVIDERS.EMAIL) {
       throw new Error(`Please login using ${user.authProvider}`);
     }
@@ -65,7 +63,6 @@ export const authWithEmailService = async (email, password) => {
     return buildAuthResponse(user);
   }
 
-  // Create new user
   user = await createUser({
     email,
     password,
@@ -76,9 +73,11 @@ export const authWithEmailService = async (email, password) => {
 
   return buildAuthResponse(user);
 };
-/**
- * Refresh Token
- */
+
+/* =====================================================
+   REFRESH TOKEN
+===================================================== */
+
 export const refreshService = async (token) => {
   logger.info("Service:refresh");
 
@@ -104,9 +103,10 @@ export const refreshService = async (token) => {
   };
 };
 
-/**
- * Google Login
- */
+/* =====================================================
+   GOOGLE LOGIN
+===================================================== */
+
 export const loginWithGoogleService = async (idToken) => {
   logger.info("Service:loginWithGoogle");
 
@@ -123,19 +123,15 @@ export const loginWithGoogleService = async (idToken) => {
   const googleId = payload.sub;
   const email = payload.email.toLowerCase();
 
-  // 1️⃣ Check if already linked by googleId
   let user = await findByGoogleId(googleId);
 
   if (!user) {
-    // 2️⃣ Check if user exists with same email
     user = await findByEmail(email);
 
     if (user) {
-      // Link Google to existing account
       user.googleId = googleId;
       await user.save();
     } else {
-      // 3️⃣ Create minimal user (no profile data)
       user = await upsertUserByEmail(email, {
         email,
         googleId,
@@ -149,13 +145,20 @@ export const loginWithGoogleService = async (idToken) => {
   return buildAuthResponse(user);
 };
 
-/**
- * Send OTP (Redis Based)
- */
+/* =====================================================
+   SEND OTP (PLAYSTORE SIMPLE VERSION)
+===================================================== */
+
 export const sendOtpService = async (phoneNumber) => {
   logger.info(`Service:sendOtp phone=${phoneNumber}`);
 
-  const otp = generateOTP();
+  let otp;
+
+  if (phoneNumber === "9999999999") {
+    otp = "999999"; // Play Store review login
+  } else {
+    otp = generateOTP();
+  }
 
   await storeOTP(phoneNumber, otp);
 
@@ -165,9 +168,10 @@ export const sendOtpService = async (phoneNumber) => {
   };
 };
 
-/**
- * Verify OTP (Phone Login - Redis Based)
- */
+/* =====================================================
+   VERIFY OTP
+===================================================== */
+
 export const verifyOtpService = async (phoneNumber, otp) => {
   logger.info(`Service:verifyOtp phone=${phoneNumber}`);
 
@@ -177,11 +181,9 @@ export const verifyOtpService = async (phoneNumber, otp) => {
     throw new Error(result.message);
   }
 
-  // 1️⃣ Check if user already exists
   let user = await findByPhone(phoneNumber);
 
   if (!user) {
-    // 2️⃣ Create minimal user only if not exists
     user = await upsertUserByPhone(phoneNumber, {
       phoneNumber,
       authProvider: AUTH_PROVIDERS.PHONE,

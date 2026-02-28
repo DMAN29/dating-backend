@@ -10,35 +10,86 @@ import logger from "../../shared/utils/logger.js";
 import {
   USER_ROLES,
   ACCOUNT_STATUS,
+  AUTH_PROVIDERS,
+  GEO_TYPES,
 } from "../../shared/constants/user.constants.js";
+import { getMissingOnboardingFields } from "../../shared/utils/onboardingChecker.js";
 
 /**
  * Service for business logic related to Users
  */
 
 export const getProfileService = async (userId) => {
-  logger.info(`Service:getProfile userId=${userId}`);
   const user = await findById(userId);
-  if (!user) {
-    throw new Error("User not found");
+  if (!user) throw new Error("User not found");
+
+  if (!user.isOnboarded) {
+    return {
+      user,
+      missingFields: getMissingOnboardingFields(user),
+    };
   }
-  return user;
+
+  return { user };
 };
 
 export const updateProfileService = async (userId, updateData) => {
-  const user = await updateById(userId, updateData);
-  if (!user) {
-    throw new Error("User not found");
+  const existingUser = await findById(userId);
+  if (!existingUser) throw new Error("User not found");
+
+  const sanitizedData = { ...updateData };
+
+  // ❌ Never allow password update here
+  delete sanitizedData.password;
+
+  // ❌ Protect identity field based on provider
+  if (existingUser.authProvider === AUTH_PROVIDERS.EMAIL) {
+    delete sanitizedData.email;
   }
-  return user;
+
+  if (existingUser.authProvider === AUTH_PROVIDERS.GOOGLE) {
+    delete sanitizedData.googleId;
+    delete sanitizedData.email; // Google identity tied to email
+  }
+
+  if (existingUser.authProvider === AUTH_PROVIDERS.PHONE) {
+    delete sanitizedData.phoneNumber;
+  }
+  if (sanitizedData.location?.coordinates?.coordinates) {
+    const coords = sanitizedData.location.coordinates.coordinates;
+
+    sanitizedData.location.coordinates = {
+      type: sanitizedData.location.coordinates.type || GEO_TYPES.POINT,
+      coordinates: coords,
+    };
+  }
+  // ❌ Never allow system fields
+  delete sanitizedData.role;
+  delete sanitizedData.status;
+  delete sanitizedData.authProvider;
+  delete sanitizedData.profileComplete;
+  delete sanitizedData.isOnboarded;
+  delete sanitizedData.isDeleted;
+  delete sanitizedData.isDummy;
+  delete sanitizedData.lastActive;
+
+  const updatedUser = await updateById(userId, sanitizedData);
+  if (!updatedUser) throw new Error("User not found");
+
+  if (!updatedUser.isOnboarded) {
+    return {
+      user: updatedUser,
+      missingFields: getMissingOnboardingFields(updatedUser),
+    };
+  }
+
+  return { user: updatedUser };
 };
 
 export const getUserByIdService = async (userId) => {
   logger.info(`Service:getUserById userId=${userId}`);
   const user = await findById(userId);
-  if (!user) {
-    throw new Error("User not found");
-  }
+  if (!user) throw new Error("User not found");
   return user;
 };
 

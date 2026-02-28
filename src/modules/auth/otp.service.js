@@ -3,9 +3,17 @@ import { redisClient } from "../../config/redisClient.js";
 const OTP_EXPIRY_SECONDS = 300; // 5 minutes
 const MAX_ATTEMPTS = 5;
 
+/* =====================================================
+   GENERATE OTP
+===================================================== */
+
 export const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
+
+/* =====================================================
+   STORE OTP
+===================================================== */
 
 export const storeOTP = async (phoneNumber, otp) => {
   const key = `otp:${phoneNumber}`;
@@ -20,6 +28,10 @@ export const storeOTP = async (phoneNumber, otp) => {
   );
 };
 
+/* =====================================================
+   VERIFY OTP
+===================================================== */
+
 export const verifyStoredOTP = async (phoneNumber, inputOtp) => {
   const key = `otp:${phoneNumber}`;
 
@@ -31,7 +43,6 @@ export const verifyStoredOTP = async (phoneNumber, inputOtp) => {
 
   const parsed = JSON.parse(data);
 
-  // Check attempts
   if (parsed.attempts >= MAX_ATTEMPTS) {
     await redisClient.del(key);
     return { success: false, message: "Too many attempts. OTP invalidated." };
@@ -45,7 +56,6 @@ export const verifyStoredOTP = async (phoneNumber, inputOtp) => {
     return { success: false, message: "Invalid OTP" };
   }
 
-  // Correct OTP → delete
   await redisClient.del(key);
 
   return { success: true };

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+
 import {
   USER_ROLES,
   GENDERS,
@@ -10,21 +11,32 @@ import {
   ACCOUNT_STATUS,
 } from "../../shared/constants/user.constants.js";
 
+import {
+  PROFILE_FOR,
+  MOTHER_TONGUES,
+  MARITAL_STATUS,
+  PHYSICAL_STATUS,
+  RELIGIONS,
+  CASTES,
+  HAS_DOSH,
+  DOSH_TYPES,
+  EDUCATION_LEVELS,
+  EMPLOYMENT_TYPES,
+  OCCUPATIONS,
+  INCOME_CURRENCIES,
+  ANNUAL_INCOME,
+  FAMILY_STATUS,
+  FAMILY_WEALTH,
+} from "../../shared/constants/matrimonial.constants.js";
+
 const userSchema = new mongoose.Schema(
   {
     /* =========================
        BASIC PROFILE
     ========================= */
 
-    firstName: {
-      type: String,
-      trim: true,
-    },
-
-    lastName: {
-      type: String,
-      trim: true,
-    },
+    firstName: { type: String, trim: true },
+    lastName: { type: String, trim: true },
 
     email: {
       type: String,
@@ -39,7 +51,7 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.authProvider === AUTH_PROVIDERS.EMAIL;
       },
-      minlength: [5, "Password must be at least 5 characters"],
+      minlength: 5,
       select: false,
     },
 
@@ -62,11 +74,124 @@ const userSchema = new mongoose.Schema(
 
     bio: {
       type: String,
+      maxlength: 500,
       trim: true,
-      maxlength: [500, "Bio cannot exceed 500 characters"],
     },
 
     profilePhotos: [{ type: String }],
+
+    /* =========================
+       MATRIMONIAL DETAILS
+    ========================= */
+
+    matrimonial: {
+      profileFor: {
+        type: String,
+        enum: Object.values(PROFILE_FOR),
+      },
+
+      motherTongue: {
+        type: String,
+        enum: Object.values(MOTHER_TONGUES),
+      },
+
+      personal: {
+        height: {
+          feet: { type: Number },
+          inches: { type: Number },
+          cm: { type: Number, index: true },
+        },
+
+        physicalStatus: {
+          type: String,
+          enum: Object.values(PHYSICAL_STATUS),
+        },
+
+        maritalStatus: {
+          type: String,
+          enum: Object.values(MARITAL_STATUS),
+        },
+      },
+
+      religious: {
+        religion: {
+          type: String,
+          enum: Object.values(RELIGIONS),
+          index: true,
+        },
+
+        caste: {
+          type: String,
+          enum: Object.values(CASTES),
+          index: true,
+        },
+
+        subcaste: {
+          type: String,
+          trim: true,
+        },
+
+        willingToMarryAnyCaste: {
+          type: Boolean,
+          default: false,
+        },
+
+        hasDosh: {
+          type: String,
+          enum: Object.values(HAS_DOSH),
+        },
+
+        doshType: {
+          type: String,
+          enum: Object.values(DOSH_TYPES),
+        },
+      },
+
+      professional: {
+        education: {
+          type: String,
+          enum: Object.values(EDUCATION_LEVELS),
+          index: true,
+        },
+
+        employmentType: {
+          type: String,
+          enum: Object.values(EMPLOYMENT_TYPES),
+        },
+
+        occupation: {
+          type: String,
+          enum: Object.values(OCCUPATIONS),
+        },
+
+        incomeCurrency: {
+          type: String,
+          enum: Object.values(INCOME_CURRENCIES),
+        },
+
+        annualIncome: {
+          type: String,
+          enum: Object.values(ANNUAL_INCOME),
+        },
+      },
+
+      family: {
+        familyStatus: {
+          type: String,
+          enum: Object.values(FAMILY_STATUS),
+        },
+
+        familyWealth: {
+          type: String,
+          enum: Object.values(FAMILY_WEALTH),
+        },
+
+        ancestralOrigin: {
+          type: String,
+          trim: true,
+        },
+      },
+    },
 
     /* =========================
        LOCATION
@@ -74,7 +199,9 @@ const userSchema = new mongoose.Schema(
 
     location: {
       city: { type: String },
+      state: { type: String },
       country: { type: String },
+
       coordinates: {
         type: {
           type: String,
@@ -83,7 +210,7 @@ const userSchema = new mongoose.Schema(
         },
         coordinates: {
           type: [Number],
-          default: [0, 0], // [0,0] means not set
+          default: [0, 0],
         },
       },
     },
@@ -98,10 +225,12 @@ const userSchema = new mongoose.Schema(
         enum: Object.values(INTEREST_PREFERENCES),
         default: INTEREST_PREFERENCES.BOTH,
       },
+
       ageRange: {
         min: { type: Number, default: 18 },
         max: { type: Number, default: 100 },
       },
+
       maxDistance: {
         type: Number,
         default: 50,
@@ -132,37 +261,19 @@ const userSchema = new mongoose.Schema(
     },
 
     /* =========================
-       COMPLETION FLAGS
-    ========================= */
-
-    profileComplete: {
-      type: Boolean,
-      default: false,
-    },
-
-    isOnboarded: {
-      type: Boolean,
-      default: false,
-    },
-
-    /* =========================
        ACCOUNT STATUS
     ========================= */
 
     status: {
-      isVerified: {
-        type: Boolean,
-        default: false,
-      },
-      isBlocked: {
-        type: Boolean,
-        default: false,
-      },
+      isVerified: { type: Boolean, default: false },
+      isBlocked: { type: Boolean, default: false },
+
       subscriptionType: {
         type: String,
         enum: Object.values(SUBSCRIPTION_TYPES),
         default: SUBSCRIPTION_TYPES.FREE,
       },
+
       state: {
         type: String,
         enum: Object.values(ACCOUNT_STATUS),
@@ -170,19 +281,21 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
+    /* =========================
+       SYSTEM FLAGS
+    ========================= */
+
+    profileComplete: { type: Boolean, default: false },
+    isOnboarded: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    isDummy: { type: Boolean, default: false, index: true },
 
     lastActive: {
       type: Date,
       default: Date.now,
     },
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true },
 );
 
 /* =========================
@@ -208,7 +321,7 @@ userSchema.pre("save", async function (next) {
 ========================= */
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 /* =========================
@@ -217,7 +330,12 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 userSchema.methods.checkProfileComplete = function () {
   return Boolean(
-    this.firstName && this.lastName && this.gender && this.dateOfBirth,
+    this.firstName &&
+    this.gender &&
+    this.dateOfBirth &&
+    this.matrimonial?.personal?.height?.cm &&
+    this.matrimonial?.religious?.religion &&
+    this.matrimonial?.professional?.education,
   );
 };
 
@@ -226,12 +344,13 @@ userSchema.methods.checkProfileComplete = function () {
 ========================= */
 
 userSchema.methods.checkOnboardingComplete = function () {
-  const hasBasics = this.checkProfileComplete();
+  const hasFirstName = this.firstName && this.firstName.trim().length > 0;
 
-  const hasBio = Boolean(this.bio?.trim());
+  const hasLastName = this.lastName && this.lastName.trim().length > 0;
 
-  const hasPhotos =
-    Array.isArray(this.profilePhotos) && this.profilePhotos.length > 0;
+  const hasGender = !!this.gender;
+
+  const hasPreference = !!this.preference?.interestedIn;
 
   const coords = this.location?.coordinates?.coordinates;
 
@@ -240,14 +359,12 @@ userSchema.methods.checkOnboardingComplete = function () {
     coords.length === 2 &&
     !(coords[0] === 0 && coords[1] === 0);
 
-  // 🔥 Dynamic contact requirement
-  const hasContactInfo =
-    this.authProvider === AUTH_PROVIDERS.PHONE
-      ? Boolean(this.phoneNumber)
-      : Boolean(this.email);
-
   return (
-    hasBasics && hasBio && hasPhotos && hasValidCoordinates && hasContactInfo
+    hasFirstName &&
+    hasLastName &&
+    hasGender &&
+    hasPreference &&
+    hasValidCoordinates
   );
 };
 
@@ -262,5 +379,4 @@ userSchema.pre("save", function (next) {
 });
 
 const User = mongoose.model("User", userSchema);
-
 export default User;
